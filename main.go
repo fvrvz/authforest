@@ -1,7 +1,34 @@
 package main
 
-import "fmt"
+import (
+	"auth-service-go/controllers"
+	"auth-service-go/initializers"
+	"fmt"
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
-	fmt.Println("Hello")
+	cfg, err := initializers.LoadConfig("config/config.yml", ".env")
+
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	initializers.InitDB(cfg)
+
+	// set routes
+	router := gin.Default()
+
+	v1 := router.Group("/api/v1")
+	{
+		controllers.SetupAuthRoutes(v1)
+	}
+
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+
+	if err := router.Run(addr); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
 }
