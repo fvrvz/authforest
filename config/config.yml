@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+database:
+  host: localhost
+  port: 5432
+  username: ${DB_USER}
+  password: ${DB_PASSWORD}
+  db: auth-service-go
+  sslmode: disable
