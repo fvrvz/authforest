@@ -21,9 +21,15 @@ type Database struct {
 	SSLMode  string `yaml:"sslmode"`
 }
 
+type JWT struct {
+	ExpiryHours int    `yaml:"expiry_hours"`
+	JWTSecret   string `yaml:"jwt_secret"`
+}
+
 type Config struct {
 	Server   Server   `yaml:"server"`
 	Database Database `yaml:"database"`
+	JWT      JWT      `yaml:"jwt"`
 }
 
 func resolveEnvPlaceholders(content string) string {

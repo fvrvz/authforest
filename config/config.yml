@@ -8,3 +8,7 @@ database:
   password: ${DB_PASSWORD}
   db: auth-service-go
   sslmode: disable
+
+jwt:
+  expiry_hours: 72
+  jwt_secret: ${JWT_SECRET}

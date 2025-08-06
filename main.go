@@ -3,6 +3,7 @@ package main
 import (
 	"auth-service-go/controllers"
 	"auth-service-go/initializers"
+	"auth-service-go/middlewares"
 	"fmt"
 	"log"
 
@@ -20,6 +21,8 @@ func main() {
 
 	// set routes
 	router := gin.Default()
+
+	router.Use(middlewares.InjectDeps(cfg))
 
 	v1 := router.Group("/api/v1")
 	{
