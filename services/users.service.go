@@ -3,6 +3,7 @@ package services
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/fvrvz/auth-service-go/db"
 	"github.com/fvrvz/auth-service-go/dto"
@@ -23,6 +24,10 @@ func GetUsers(ctx *gin.Context) {
 		return
 	}
 
+	if users == nil {
+		users = []dto.UserDTO{}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Users fetched successfully",
 		"data":    users,
@@ -34,15 +39,15 @@ func Register(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid Input",
-			"details": err.Error(),
+			"error":       "Invalid Input",
+			"description": err.Error(),
 		})
 		return
 	}
 
 	var existing models.User
 
-	if err := db.GetDB().Where("email = ? OR username = ?", req.Email, req.Username).First(&existing).Error; err == nil {
+	if err := db.GetDB().Where("username = ?", req.Username).First(&existing).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": "User already exists",
 		})
@@ -58,10 +63,22 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	dob, erre := time.Parse("2006-01-02", req.DOB)
+
+	if erre != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format"})
+		return
+	}
+
+	normalizedDOB := helpers.NormalizeDate(dob)
+
 	user := models.User{
-		Username: req.Username,
-		Password: hashedPassword,
-		Email:    req.Email,
+		Username:  req.Username,
+		Password:  hashedPassword,
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		DOB:       normalizedDOB,
 	}
 
 	if err := db.GetDB().Create(&user).Error; err != nil {
