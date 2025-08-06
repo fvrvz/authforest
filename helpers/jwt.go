@@ -1,9 +1,9 @@
 package helpers
 
 import (
-	"auth-service-go/initializers"
 	"time"
 
+	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -13,7 +13,7 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), err
 }
 
-func GenerateJWT(cfg *initializers.Config, username string, email string) (string, error) {
+func GenerateJWT(cfg *dto.Config, username string, email string) (string, error) {
 	expiration := time.Now().Add(time.Duration(cfg.JWT.ExpiryHours) * time.Hour)
 
 	claims := jwt.MapClaims{

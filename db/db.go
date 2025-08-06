@@ -1,17 +1,20 @@
-package initializers
+package db
 
 import (
-	"auth-service-go/models"
 	"fmt"
 	"log"
 
+	"github.com/fvrvz/auth-service-go/config"
+	"github.com/fvrvz/auth-service-go/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+var db *gorm.DB
 
-func InitDB(cfg *Config) {
+func Init() {
+	cfg := config.GetConfig()
+
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		cfg.Database.Host,
@@ -23,13 +26,17 @@ func InitDB(cfg *Config) {
 	)
 
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 
-	if err := DB.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}); err != nil {
 		log.Fatalf("Migration failed %v", err)
 	}
+}
+
+func GetDB() *gorm.DB {
+	return db
 }

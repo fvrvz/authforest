@@ -1,4 +1,4 @@
-module auth-service-go
+module github.com/fvrvz/auth-service-go
 
 go 1.24.5
 
