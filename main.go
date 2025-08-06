@@ -27,6 +27,7 @@ func main() {
 	v1 := router.Group("/api/v1")
 	{
 		controllers.SetupAuthRoutes(v1)
+		controllers.SetupUserRoutes(v1)
 	}
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
