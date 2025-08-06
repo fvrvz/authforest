@@ -42,7 +42,7 @@ func Login(c *gin.Context) {
 	}
 
 	config := config.GetConfig()
-	token, err := helpers.GenerateJWT(config, user.Username, user.Email)
+	token, refreshToken, err := helpers.GenerateJWT(config, user.Username)
 
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to generate token"})
@@ -50,9 +50,10 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.AuthResponse{
-		AccessToken: token,
-		TokenType:   constants.BEARER,
-		ExpiresIn:   config.JWT.ExpiryHours * 3600,
+		AccessToken:  token,
+		RefreshToken: refreshToken,
+		TokenType:    constants.BEARER,
+		ExpiresIn:    config.JWT.ExpiryMinutes * 60,
 	})
 }
 

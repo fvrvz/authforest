@@ -13,17 +13,38 @@ func HashPassword(password string) (string, error) {
 	return string(hashedBytes), err
 }
 
-func GenerateJWT(cfg *dto.Config, username string, email string) (string, error) {
-	expiration := time.Now().Add(time.Duration(cfg.JWT.ExpiryHours) * time.Hour)
+func GenerateJWT(cfg *dto.Config, username string) (accessToken string, refreshToken string, err error) {
+	expiration := time.Now().Add(time.Duration(cfg.JWT.ExpiryMinutes) * time.Minute)
 
-	claims := jwt.MapClaims{
-		"sub":   username,
-		"email": email,
-		"iat":   time.Now().Unix(),
-		"exp":   expiration.Unix(),
+	accessClaims := jwt.RegisteredClaims{
+		Subject:   username,
+		Issuer:    "auth-service-go",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(expiration),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	access := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 
-	return token.SignedString([]byte(cfg.JWT.JWTSecret))
+	accessToken, err = access.SignedString([]byte(cfg.JWT.JWTSecret))
+
+	if err != nil {
+		return
+	}
+
+	refreshClaims := jwt.RegisteredClaims{
+		Subject:   username,
+		Issuer:    "auth-service-go",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+	}
+
+	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+
+	refreshToken, err = refresh.SignedString([]byte(cfg.JWT.JWTSecret))
+
+	if err != nil {
+		return
+	}
+
+	return
 }

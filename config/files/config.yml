@@ -11,5 +11,5 @@ database:
   time_zone: UTC
 
 jwt:
-  expiry_hours: 72
+  expiry_minutes: 5
   jwt_secret: ${JWT_SECRET}
