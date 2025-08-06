@@ -1,8 +1,7 @@
 package controllers
 
 import (
-	"auth-service-go/services"
-
+	"github.com/fvrvz/auth-service-go/services"
 	"github.com/gin-gonic/gin"
 )
 

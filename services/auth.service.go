@@ -1,22 +1,19 @@
 package services
 
 import (
-	"auth-service-go/helpers"
-	"auth-service-go/initializers"
-	"auth-service-go/models"
 	"net/http"
 
+	"github.com/fvrvz/auth-service-go/config"
+	"github.com/fvrvz/auth-service-go/db"
+	"github.com/fvrvz/auth-service-go/dto"
+	"github.com/fvrvz/auth-service-go/helpers"
+	"github.com/fvrvz/auth-service-go/models"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginRequest struct {
-	UserId   string `json:"userId" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 func Login(c *gin.Context) {
-	var req LoginRequest
+	var req dto.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -28,7 +25,7 @@ func Login(c *gin.Context) {
 
 	var user models.User
 
-	if err := initializers.DB.Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
+	if err := db.GetDB().Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -39,7 +36,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	config := helpers.GetConfig(c)
+	config := config.GetConfig()
 	token, err := helpers.GenerateJWT(config, user.Username, user.Email)
 
 	if err != nil {
