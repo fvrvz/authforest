@@ -11,6 +11,7 @@ type Database struct {
 	Password string `yaml:"password"`
 	DB       string `yaml:"db"`
 	SSLMode  string `yaml:"sslmode"`
+	TimeZone string `yaml:"time_zone"`
 }
 
 type JWT struct {
