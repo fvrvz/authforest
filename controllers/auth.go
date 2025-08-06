@@ -9,8 +9,7 @@ import (
 func SetupAuthRoutes(routerGroup *gin.RouterGroup) {
 	auth := routerGroup.Group("/auth")
 	{
-		auth.POST("/register", services.Register)
 		auth.POST("/login", services.Login)
-		auth.DELETE("/delete", services.Delete)
+		auth.POST("/logout", services.Logout)
 	}
 }
