@@ -16,9 +16,9 @@ func Login(c *gin.Context) {
 	var req dto.LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":       "Invalid Input",
-			"description": err.Error(),
+		c.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Invalid Input",
+			Description: err.Error(),
 		})
 		return
 	}
@@ -26,13 +26,13 @@ func Login(c *gin.Context) {
 	var user models.User
 
 	if err := db.GetDB().Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
 		return
 	}
 
 	// Compare password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
 		return
 	}
 
@@ -40,19 +40,19 @@ func Login(c *gin.Context) {
 	token, err := helpers.GenerateJWT(config, user.Username, user.Email)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to generate token"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"access_token": token,
-		"token_type":   "Bearer",
-		"expires_in":   config.JWT.ExpiryHours * 3600,
+	c.JSON(http.StatusOK, dto.AuthResponse{
+		AccessToken: token,
+		TokenType:   "Bearer",
+		ExpiresIn:   config.JWT.ExpiryHours * 3600,
 	})
 }
 
 func Logout(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User logged out successfully",
+	c.JSON(http.StatusOK, dto.SuccessResponse[string]{
+		Message: "User logged out successfully",
 	})
 }

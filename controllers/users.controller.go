@@ -9,7 +9,7 @@ func SetupUserRoutes(r *gin.RouterGroup) {
 	users := r.Group("/users")
 	{
 		users.GET("/", services.GetUsers)
-		users.GET("/:userId")
+		users.GET("/:userId", services.GetUser)
 		users.POST("/register", services.Register)
 		users.DELETE("/:userId", services.Delete)
 	}
