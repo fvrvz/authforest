@@ -3,8 +3,11 @@ package db
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/fvrvz/auth-service-go/config"
+	"github.com/fvrvz/auth-service-go/constants"
+	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -36,6 +39,28 @@ func Init() {
 	if err := db.AutoMigrate(&models.User{}, &models.AuthRefreshTokens{}); err != nil {
 		log.Fatalf("Migration failed %v", err)
 	}
+
+	hashedPass, err := helpers.HashPassword(constants.DEFAULT_USER_PASS)
+
+	if err != nil {
+		log.Fatalln("Unable to hash password for default user")
+	}
+
+	initialUser := models.User{
+		Username:  constants.DEFAULT_USERNAME,
+		Email:     constants.DEFAULT_USER_EMAIL,
+		FirstName: constants.DEFAULT_USER_FNAME,
+		LastName:  constants.DEFAULT_USER_LNAME,
+		Password:  hashedPass,
+		DOB:       time.Now(),
+	}
+
+	if err := db.FirstOrCreate(&initialUser, models.User{Username: constants.DEFAULT_USERNAME}).Error; err != nil {
+		log.Fatalf("Failed to create default user: %v", err)
+	} else {
+		log.Printf("Use default user to login. Username: '%s' with Password: '%s'", constants.DEFAULT_USERNAME, constants.DEFAULT_USER_PASS)
+	}
+
 }
 
 func GetDB() *gorm.DB {

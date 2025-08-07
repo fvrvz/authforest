@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fvrvz/auth-service-go/constants"
 	"github.com/fvrvz/auth-service-go/db"
 	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/fvrvz/auth-service-go/helpers"
@@ -64,7 +65,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	dob, erre := time.Parse("2006-01-02", req.DOB)
+	dob, erre := time.Parse(constants.DATE_FORMAT, req.DOB)
 
 	if erre != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid date format"})
@@ -90,7 +91,6 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, dto.SuccessResponse[gin.H]{
 		Message: "User registered successfully",
 		Data: gin.H{
-			"id":       user.ID,
 			"username": user.Username,
 			"email":    user.Email,
 		},
