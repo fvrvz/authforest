@@ -14,8 +14,8 @@ func InitRouter() *gin.Engine {
 		controllers.SetupAuthRoutes(v1)
 		controllers.SetupUserPublicRoutes(v1)
 
-		privateRoutes := v1.Group("/", middlewares.AuthMiddleware())
-		controllers.SetupUserPrivateRoutes(privateRoutes)
+		privateGroup := v1.Group("/", middlewares.AuthMiddleware())
+		controllers.SetupUserPrivateRoutes(privateGroup)
 	}
 
 	return router
