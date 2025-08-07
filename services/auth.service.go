@@ -78,13 +78,11 @@ func Verify(ctx *gin.Context) (*jwt.RegisteredClaims, error) {
 
 	tokenString := parts[1]
 
-	jwtSecret := config.GetConfig().JWT.JWTSecret
-
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(jwtSecret), nil
+		return []byte(config.GetConfig().JWT.JWTSecret), nil
 	})
 
 	if err != nil {
