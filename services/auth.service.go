@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -26,44 +27,22 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-
-	if err := db.GetDB().Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
-		return
-	}
-
-	// Compare password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
-		return
-	}
-
-	config := config.GetConfig()
-	token, refreshToken, err := helpers.GenerateJWT(config, user.Username)
+	user, err := authenticateUser(req)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to generate token"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
 		return
 	}
 
-	refreshTokenRecord := models.AuthRefreshTokens{
-		Username:   user.Username,
-		TokenHash:  helpers.Generate256Hash(refreshToken),
-		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
-	}
+	accessToken, refreshToken, err := generateAndReplaceRefreshToken(user.Username)
 
-	if err := db.GetDB().Create(&refreshTokenRecord).Error; err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to save refresh token"})
+	if err != nil {
+		log.Printf("Login token error: %v", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Token generation failed"})
 		return
 	}
 
-	c.JSON(http.StatusOK, dto.AuthResponse{
-		AccessToken:  token,
-		RefreshToken: refreshToken,
-		TokenType:    constants.BEARER,
-		ExpiresIn:    config.JWT.ExpiryMinutes * 60,
-	})
+	respondWithTokens(c, accessToken, refreshToken)
 }
 
 func Logout(c *gin.Context) {
@@ -87,74 +66,127 @@ func RefreshToken(ctx *gin.Context) {
 
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error:       "Refresh Token Expired",
+			Error:       "Invalid or expired refresh token",
 			Description: err.Error(),
 		})
 		return
 	}
 
-	incomingTokenHash := helpers.Generate256Hash(req.RefreshToken)
-
-	var record models.AuthRefreshTokens
-	result := db.GetDB().Model(&models.AuthRefreshTokens{}).Where("token_hash = ? AND expiry_time > ?", incomingTokenHash, time.Now()).First(&record)
-
-	if err := result.Error; err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error:       "Database error",
-			Description: err.Error(),
-		})
-		return
-	}
-
-	if result.RowsAffected == 0 {
-		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
-			Error: "Refresh token expired",
-		})
-		return
-	}
-
-	deleteResult := db.GetDB().Model(&models.AuthRefreshTokens{}).Where("token_hash = ?", incomingTokenHash).Delete(&record)
-
-	if err := deleteResult.Error; err != nil {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error:       "Database error",
-			Description: err.Error(),
-		})
-		return
-	}
-
-	if deleteResult.RowsAffected == 0 {
-		log.Println("Token Expired")
-		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
-			Error:       "Token Expired",
-			Description: "Please login",
-		})
-		return
-	}
-
-	config := config.GetConfig()
-	token, refreshToken, err := helpers.GenerateJWT(config, claims.Subject)
+	record, err := findValidRefreshToken(req.RefreshToken)
 
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to generate token"})
+		log.Printf("Refresh token lookup failed: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Refresh token not valid"})
 		return
 	}
 
-	refreshTokenRecord := models.AuthRefreshTokens{
-		Username:   claims.Subject,
+	if err := deleteRefreshToken(record); err != nil {
+		log.Printf("Failed to delete refresh token: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Internal server error"})
+		return
+	}
+
+	accessToken, newRefreshToken, err := generateAndStoreNewTokens(claims.Subject)
+
+	if err != nil {
+		log.Printf("Failed to generate new tokens: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error:       "Token generation failed",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	respondWithTokens(ctx, accessToken, newRefreshToken)
+}
+
+func findValidRefreshToken(refreshToken string) (*models.AuthRefreshTokens, error) {
+	hashedToken := helpers.Generate256Hash(refreshToken)
+
+	var record *models.AuthRefreshTokens
+
+	if err := db.GetDB().Where("token_hash = ? AND expiry_time > ?", hashedToken, time.Now()).First(&record).Error; err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+func deleteRefreshToken(record *models.AuthRefreshTokens) error {
+	return db.GetDB().Delete(&record).Error
+}
+
+func generateAndStoreNewTokens(username string) (string, string, error) {
+	config := config.GetConfig()
+
+	accessToken, refreshToken, err := helpers.GenerateJWT(config, username)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	newRecord := models.AuthRefreshTokens{
+		Username:   username,
 		TokenHash:  helpers.Generate256Hash(refreshToken),
 		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
 	}
 
-	if err := db.GetDB().Create(&refreshTokenRecord).Error; err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to save refresh token"})
-		return
+	if err := db.GetDB().Create(&newRecord).Error; err != nil {
+		return "", "", err
 	}
 
+	return accessToken, refreshToken, nil
+}
+
+func respondWithTokens(ctx *gin.Context, accessToken string, refreshToken string) {
 	ctx.JSON(http.StatusOK, dto.AuthResponse{
-		AccessToken:  token,
+		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    constants.BEARER,
-		ExpiresIn:    config.JWT.ExpiryMinutes * 60,
+		ExpiresIn:    config.GetConfig().JWT.ExpiryMinutes * 60,
 	})
+}
+
+func authenticateUser(req dto.LoginRequest) (*models.User, error) {
+	var user models.User
+
+	if err := db.GetDB().Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
+		return nil, err
+	}
+
+	// Compare password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func generateAndReplaceRefreshToken(username string) (string, string, error) {
+	config := config.GetConfig()
+	accessToken, refreshToken, err := helpers.GenerateJWT(config, username)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	var existing models.AuthRefreshTokens
+
+	if err := db.GetDB().Where("username = ?", username).First(&existing).Error; err == nil {
+		if err := deleteRefreshToken(&existing); err != nil {
+			return "", "", fmt.Errorf("failed to delete existing refresh token: %w", err)
+		}
+	}
+
+	newRecord := models.AuthRefreshTokens{
+		Username:   username,
+		TokenHash:  helpers.Generate256Hash(refreshToken),
+		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
+	}
+
+	if err := db.GetDB().Create(&newRecord).Error; err != nil {
+		return "", "", fmt.Errorf("failed to save new refresh token: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
 }
