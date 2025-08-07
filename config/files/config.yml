@@ -13,3 +13,4 @@ database:
 jwt:
   expiry_minutes: 5
   jwt_secret: ${JWT_SECRET}
+  refresh_token_expiry_hours: 2

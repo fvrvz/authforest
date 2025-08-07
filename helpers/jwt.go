@@ -35,7 +35,7 @@ func GenerateJWT(cfg *dto.Config, username string) (accessToken string, refreshT
 		Subject:   username,
 		Issuer:    "auth-service-go",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.JWT.RefreshTokenExpiryHours) * time.Hour)),
 	}
 
 	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
