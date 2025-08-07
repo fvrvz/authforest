@@ -1,0 +1,273 @@
+{
+	"info": {
+		"_postman_id": "65b3c011-bb67-496b-b63e-345592b7ef74",
+		"name": "AuthServiceGo",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "41964263"
+	},
+	"item": [
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/users",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By Username",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/users/tester1",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"tester1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/users/tester",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"tester"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstName\": \"Test\",\r\n    \"lastName\": \"Account\",\r\n    \"email\": \"tester1@example.com\",\r\n    \"username\": \"tester1\",\r\n    \"password\": \"test123456\",\r\n    \"DOB\": \"1990-12-31\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/users/register",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"users",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Extract access_token from JSON response and set it as a collection variable\r",
+									"let json = pm.response.json();\r",
+									"if (json.access_token && json.refresh_token) {\r",
+									"    pm.collectionVariables.set(\"accessToken\", json.access_token);\r",
+									"    pm.collectionVariables.set(\"refreshToken\", json.refresh_token);\r",
+									"    console.log(\"Tokens saved:\", {\r",
+									"        accessToken: json.access_token,\r",
+									"        refreshToken: json.refresh_token\r",
+									"    });\r",
+									"} else {\r",
+									"    console.warn(\"No access_token found in response\");\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"userId\": \"tester1\",\r\n    \"password\": \"test123456\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/auth/login",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Extract access_token from JSON response and set it as a collection variable\r",
+									"let json = pm.response.json();\r",
+									"if (json.access_token && json.refresh_token) {\r",
+									"    pm.collectionVariables.set(\"accessToken\", json.access_token);\r",
+									"    pm.collectionVariables.set(\"refreshToken\", json.refresh_token);\r",
+									"    console.log(\"Tokens saved:\", {\r",
+									"        accessToken: json.access_token,\r",
+									"        refreshToken: json.refresh_token\r",
+									"    });\r",
+									"} else {\r",
+									"    console.warn(\"No access_token found in response\");\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"refresh_token\": \"{{refreshToken}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/auth/refresh",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{accessToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "hostname",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "apiVersion",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": ""
+		}
+	]
+}

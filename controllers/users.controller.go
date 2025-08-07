@@ -5,12 +5,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupUserRoutes(r *gin.RouterGroup) {
+func SetupUserPrivateRoutes(r *gin.RouterGroup) {
 	users := r.Group("/users")
 	{
 		users.GET("/", services.GetUsers)
 		users.GET("/:userId", services.GetUser)
-		users.POST("/register", services.Register)
 		users.DELETE("/:userId", services.Delete)
+	}
+}
+
+func SetupUserPublicRoutes(r *gin.RouterGroup) {
+	users := r.Group("/users")
+	{
+		users.POST("/register", services.Register)
 	}
 }

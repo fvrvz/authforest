@@ -15,8 +15,9 @@ type Database struct {
 }
 
 type JWT struct {
-	ExpiryHours int    `yaml:"expiry_hours"`
-	JWTSecret   string `yaml:"jwt_secret"`
+	ExpiryMinutes           int    `yaml:"expiry_minutes"`
+	JWTSecret               string `yaml:"jwt_secret"`
+	RefreshTokenExpiryHours int    `yaml:"refresh_token_expiry_hours"`
 }
 
 type Config struct {
