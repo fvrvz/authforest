@@ -1,5 +1,16 @@
 server:
   port: 8080
+  cors:
+    allowOrigins:
+      - http://localhost:5173
+    allowCredentials: true
+    maxAge: 24
+    allowMethods:
+      - GET
+      - POST
+      - DELETE
+      - OPTIONS
+      - HEAD
 
 database:
   host: localhost

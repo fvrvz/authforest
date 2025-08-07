@@ -1,7 +1,8 @@
 package dto
 
 type Server struct {
-	Port int `yaml:"port"`
+	Port int        `yaml:"port"`
+	CORS CorsConfig `yaml:"cors"`
 }
 
 type Database struct {
@@ -24,4 +25,13 @@ type Config struct {
 	Server   Server   `yaml:"server"`
 	Database Database `yaml:"database"`
 	JWT      JWT      `yaml:"jwt"`
+}
+
+type CorsConfig struct {
+	AllowOrigins     []string `yaml:"allowOrigins"`
+	AllowMethods     []string `yaml:"allowMethods"`
+	AllowHeaders     []string `yaml:"allowHeaders"`
+	ExposeHeaders    []string `yaml:"exposeHeaders"`
+	AllowCredentials bool     `yaml:"allowCredentials"`
+	MaxAge           int      `yaml:"maxAge"`
 }
