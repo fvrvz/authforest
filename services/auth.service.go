@@ -1,10 +1,9 @@
 package services
 
 import (
-	"errors"
-	"fmt"
+	"log"
 	"net/http"
-	"strings"
+	"time"
 
 	"github.com/fvrvz/auth-service-go/config"
 	"github.com/fvrvz/auth-service-go/constants"
@@ -13,7 +12,6 @@ import (
 	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -49,6 +47,17 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	refreshTokenRecord := models.AuthRefreshTokens{
+		Username:   user.Username,
+		TokenHash:  helpers.Generate256Hash(refreshToken),
+		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
+	}
+
+	if err := db.GetDB().Create(&refreshTokenRecord).Error; err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to save refresh token"})
+		return
+	}
+
 	c.JSON(http.StatusOK, dto.AuthResponse{
 		AccessToken:  token,
 		RefreshToken: refreshToken,
@@ -63,37 +72,89 @@ func Logout(c *gin.Context) {
 	})
 }
 
-func Verify(ctx *gin.Context) (*jwt.RegisteredClaims, error) {
-	authHeader := ctx.GetHeader("Authorization")
+func RefreshToken(ctx *gin.Context) {
+	var req dto.RefreshTokenRequest
 
-	if authHeader == "" {
-		return nil, errors.New("authorization header is missing")
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Invalid Input",
+			Description: err.Error(),
+		})
+		return
 	}
 
-	parts := strings.SplitN(authHeader, " ", 2)
-
-	if len(parts) != 2 || parts[0] != constants.BEARER {
-		return nil, errors.New("authorization header format must be Bearer {token}")
-	}
-
-	tokenString := parts[1]
-
-	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(config.GetConfig().JWT.JWTSecret), nil
-	})
+	claims, err := helpers.Verify(req.RefreshToken)
 
 	if err != nil {
-		return nil, err
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Refresh Token Expired",
+			Description: err.Error(),
+		})
+		return
 	}
 
-	claims, ok := token.Claims.(*jwt.RegisteredClaims)
+	incomingTokenHash := helpers.Generate256Hash(req.RefreshToken)
 
-	if !ok || !token.Valid {
-		return nil, errors.New("invalid Token")
+	var record models.AuthRefreshTokens
+	result := db.GetDB().Model(&models.AuthRefreshTokens{}).Where("token_hash = ? AND expiry_time > ?", incomingTokenHash, time.Now()).First(&record)
+
+	if err := result.Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Database error",
+			Description: err.Error(),
+		})
+		return
 	}
 
-	return claims, nil
+	if result.RowsAffected == 0 {
+		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
+			Error: "Refresh token expired",
+		})
+		return
+	}
+
+	deleteResult := db.GetDB().Model(&models.AuthRefreshTokens{}).Where("token_hash = ?", incomingTokenHash).Delete(&record)
+
+	if err := deleteResult.Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Database error",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	if deleteResult.RowsAffected == 0 {
+		log.Println("Token Expired")
+		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
+			Error:       "Token Expired",
+			Description: "Please login",
+		})
+		return
+	}
+
+	config := config.GetConfig()
+	token, refreshToken, err := helpers.GenerateJWT(config, claims.Subject)
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to generate token"})
+		return
+	}
+
+	refreshTokenRecord := models.AuthRefreshTokens{
+		Username:   claims.Subject,
+		TokenHash:  helpers.Generate256Hash(refreshToken),
+		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
+	}
+
+	if err := db.GetDB().Create(&refreshTokenRecord).Error; err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to save refresh token"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.AuthResponse{
+		AccessToken:  token,
+		RefreshToken: refreshToken,
+		TokenType:    constants.BEARER,
+		ExpiresIn:    config.JWT.ExpiryMinutes * 60,
+	})
 }
