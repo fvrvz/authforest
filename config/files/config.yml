@@ -11,6 +11,9 @@ server:
       - DELETE
       - OPTIONS
       - HEAD
+    allowHeaders:
+      - Authorization
+      - Content-Type
 
 database:
   host: localhost
