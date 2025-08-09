@@ -1,0 +1,32 @@
+name: Delete stale merged branches
+
+on:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: write
+
+jobs:
+  delete-merged-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Delete merged branches
+        run: |
+          git fetch --prune
+          for branch in $(git branch -r --merged origin/develop \
+              | grep -vE 'origin/(develop|main|master)$' \
+              | sed 's|origin/||'); do
+            echo "Deleting merged branch: $branch"
+            git push origin --delete "$branch"
+          done
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
