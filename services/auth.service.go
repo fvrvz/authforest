@@ -1,7 +1,6 @@
 package services
 
 import (
-	"log"
 	"net/http"
 	"time"
 
@@ -11,7 +10,9 @@ import (
 	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
+	"github.com/fvrvz/gologger"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,14 +30,15 @@ func Login(c *gin.Context) {
 	user, err := authenticateUser(req)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Invalid credentials"})
+		gologger.ERROR("Invalid Credentials %+v", err)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Username or password is incorrect"})
 		return
 	}
 
 	accessToken, refreshToken, err := generateTokensAndStoreRefreshToken(user.Username)
 
 	if err != nil {
-		log.Printf("Login token error: %v", err)
+		gologger.ERROR("Login token error: %+v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Token generation failed"})
 		return
 	}
@@ -45,23 +47,7 @@ func Login(c *gin.Context) {
 }
 
 func Logout(ctx *gin.Context) {
-	accessToken, err := helpers.ExtractTokenFromHeaders(ctx)
-
-	if err != nil {
-		log.Fatalf("token is missing %v", err.Error())
-		return
-	}
-
-	claims, err := helpers.ExtractClaims(accessToken)
-
-	if err != nil {
-		log.Fatalf("token expired or invalid >> %v", err.Error())
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error:       "Invalid or expired refresh token",
-			Description: err.Error(),
-		})
-		return
-	}
+	claims := ctx.MustGet("claims").(*jwt.RegisteredClaims)
 
 	blacklistRecord := models.AccessTokenBlacklist{
 		JTI:       claims.ID,
@@ -70,7 +56,7 @@ func Logout(ctx *gin.Context) {
 	}
 
 	if err := db.GetDB().FirstOrCreate(&blacklistRecord, models.AccessTokenBlacklist{JTI: claims.ID}).Error; err != nil {
-		log.Printf("Failed to blacklist the access token: %v", err)
+		gologger.ERROR("Failed to blacklist the access token: %v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Failed to logout",
 			Description: err.Error(),
@@ -80,7 +66,7 @@ func Logout(ctx *gin.Context) {
 
 	//delete the refresh token associated with this accessToken claim ID
 	if err := db.GetDB().Delete(models.AuthRefreshTokens{}, models.AuthRefreshTokens{AccessTokenID: claims.ID}).Error; err != nil {
-		log.Printf("Failed to delete the refresh token associated with access token: %v", err)
+		gologger.ERROR("Failed to delete the refresh token associated with access token: %v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Failed to logout",
 			Description: err.Error(),
@@ -97,6 +83,7 @@ func RotateRefreshToken(ctx *gin.Context) {
 	var req dto.RefreshTokenRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		gologger.WARN("Rotate Refresh Token: Invalid Input")
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
 			Error:       "Invalid Input",
 			Description: err.Error(),
@@ -115,7 +102,7 @@ func RotateRefreshToken(ctx *gin.Context) {
 	}
 
 	if err := db.GetDB().Where("jti = ? AND expires_at > ?", refreshTokenClaims.ID, time.Now()).Delete(models.AuthRefreshTokens{}).Error; err != nil {
-		log.Printf("Failed to delete refresh token: %v", err)
+		gologger.ERROR("Failed to delete refresh token: %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Internal server error"})
 		return
 	}
@@ -133,7 +120,7 @@ func RotateRefreshToken(ctx *gin.Context) {
 		}
 
 		if err := db.GetDB().FirstOrCreate(&blacklistRecord, models.AccessTokenBlacklist{JTI: accessTokenClaims.ID}).Error; err != nil {
-			log.Printf("Failed to blacklist the access token: %v", err)
+			gologger.ERROR("Failed to blacklist the access token: %+v", err)
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 				Error:       "Failed to logout",
 				Description: err.Error(),
@@ -145,7 +132,7 @@ func RotateRefreshToken(ctx *gin.Context) {
 	newAccessToken, newRefreshToken, err := generateTokensAndStoreRefreshToken(refreshTokenClaims.Subject)
 
 	if err != nil {
-		log.Printf("Failed to generate new tokens: %v", err)
+		gologger.ERROR("Failed to generate new tokens: %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Token generation failed",
 			Description: err.Error(),

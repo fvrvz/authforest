@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
+	"github.com/fvrvz/gologger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +18,7 @@ func GetUsers(ctx *gin.Context) {
 	var users []dto.UserDTO
 
 	if err := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at").Scan(&users).Error; err != nil {
-		log.Fatal("Unable to get all users")
+		gologger.ERROR("Unable to get all users %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Failed to get all users",
 			Description: err.Error(),
@@ -49,7 +49,7 @@ func Register(c *gin.Context) {
 
 	var existing models.User
 
-	if err := db.GetDB().Where("username = ?", req.Username).First(&existing).Error; err == nil {
+	if err := db.GetDB().First(&existing, models.User{Username: req.Username}).Error; err == nil {
 		c.AbortWithStatusJSON(http.StatusConflict, dto.ErrorResponse{
 			Error: "User already exists",
 		})
@@ -59,15 +59,17 @@ func Register(c *gin.Context) {
 	hashedPassword, err := helpers.HashPassword(req.Password)
 
 	if err != nil {
+		gologger.ERROR("Failed to hash password: %+v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error: "Failed to hash password",
 		})
 		return
 	}
 
-	dob, erre := time.Parse(constants.DATE_FORMAT, req.DOB)
+	dob, err := time.Parse(constants.DATE_FORMAT, req.DOB)
 
-	if erre != nil {
+	if err != nil {
+		gologger.ERROR("Invalid date: %+v", err)
 		c.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid date format"})
 		return
 	}
@@ -84,6 +86,7 @@ func Register(c *gin.Context) {
 	}
 
 	if err := db.GetDB().Create(&user).Error; err != nil {
+		gologger.ERROR("Failed to insert user: %+v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to create user"})
 		return
 	}
@@ -98,20 +101,20 @@ func Register(c *gin.Context) {
 }
 
 func Delete(c *gin.Context) {
-	username, isMatched := c.Params.Get("userId")
+	username, ok := c.Params.Get("userId")
 
-	if !isMatched {
-		log.Fatal("userId param not found")
+	if !ok {
+		gologger.ERROR("userId param not found")
 		c.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
 			Error: "UserId : '" + username + "' not passed correctly",
 		})
 		return
 	}
 
-	result := db.GetDB().Where("username = ?", username).Delete(&models.User{})
+	result := db.GetDB().Delete(&models.User{}, models.User{Username: username})
 
 	if err := result.Error; err != nil {
-		log.Println("Failed to delete:", err.Error())
+		gologger.ERROR("Failed to delete: %+v", err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Database error while deleting: " + username,
 			Description: "Unexpected error",
@@ -120,7 +123,7 @@ func Delete(c *gin.Context) {
 	}
 
 	if result.RowsAffected == 0 {
-		log.Println("User not found:", username)
+		gologger.WARN("User not found: %+v", username)
 		c.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
 			Error:       "User not found: " + username,
 			Description: "No user with that username exists",
@@ -134,10 +137,10 @@ func Delete(c *gin.Context) {
 }
 
 func GetUser(ctx *gin.Context) {
-	username, isMatched := ctx.Params.Get("userId")
+	username, ok := ctx.Params.Get("userId")
 
-	if !isMatched {
-		log.Fatal("userId param not found")
+	if !ok {
+		gologger.ERROR("userId param not found")
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
 			Error: "UserId : '" + username + "' not passed correctly",
 		})
@@ -146,10 +149,10 @@ func GetUser(ctx *gin.Context) {
 
 	var user dto.UserDTO
 
-	result := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at").Where("username = ?", username).Scan(&user)
+	result := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at").Where(models.User{Username: username}).Scan(&user)
 
 	if err := result.Error; err != nil {
-		log.Println("Failed to delete:", err.Error())
+		gologger.ERROR("Failed to delete: %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Database error while fetching: " + username,
 			Description: "Unexpected error",
@@ -158,9 +161,10 @@ func GetUser(ctx *gin.Context) {
 	}
 
 	if result.RowsAffected == 0 {
+		gologger.INFO("User not found")
 		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
 			Error:       "User not found",
-			Description: fmt.Sprintf("No user with ID %d exists", username),
+			Description: fmt.Sprintf("No user with username (%s) exists", username),
 		})
 		return
 	}
@@ -169,5 +173,4 @@ func GetUser(ctx *gin.Context) {
 		Data:    user,
 		Message: "User fetched successfully",
 	})
-
 }
