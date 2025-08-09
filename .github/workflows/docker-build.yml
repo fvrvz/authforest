@@ -60,13 +60,10 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
-            org.opencontainers.image.title={{.ImageName}}
+            org.opencontainers.image.title=auth-service-go
             org.opencontainers.image.description=Authentication service built with Go
-            org.opencontainers.image.url={{.ProjectURL}}
-            org.opencontainers.image.source={{.ProjectURL}}
-            org.opencontainers.image.version={{.Version}}
-            org.opencontainers.image.created={{.Date}}
-            org.opencontainers.image.revision={{.FullCommit}}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=MIT
 
       - name: Build and push Docker image
@@ -95,7 +92,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
           format: "sarif"
           output: "trivy-results.sarif"
 
