@@ -114,12 +114,6 @@ func RotateRefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	if err != nil {
-		log.Printf("Refresh token lookup failed: %v", err)
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Refresh token not valid"})
-		return
-	}
-
 	if err := db.GetDB().Where("jti = ? AND expires_at > ?", refreshTokenClaims.ID, time.Now()).Delete(models.AuthRefreshTokens{}).Error; err != nil {
 		log.Printf("Failed to delete refresh token: %v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Internal server error"})
