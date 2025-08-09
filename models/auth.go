@@ -3,8 +3,15 @@ package models
 import "time"
 
 type AuthRefreshTokens struct {
-	Username   string    `gorm:"primarykey;unique"`
-	TokenHash  string    `gorm:"unique;not null;column:token_hash"`
-	ExpiryTime time.Time `gorm:"not null"`
-	CreatedAt  time.Time
+	JTI           string    `gorm:"primarykey;unique"`
+	Username      string    `gorm:"not null"`
+	ExpiresAt     time.Time `gorm:"not null"`
+	IssuedAt      time.Time `gorm:"not null"`
+	AccessTokenID string    `gorm:"not null"`
+}
+
+type AccessTokenBlacklist struct {
+	JTI       string    `gorm:"primarykey;unique"`
+	ExpiresAt time.Time `gorm:"not null"`
+	IssuedAt  time.Time `gorm:"not null"`
 }
