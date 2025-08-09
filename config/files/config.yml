@@ -22,6 +22,6 @@ database:
   time_zone: UTC
 
 jwt:
-  expiry_minutes: 5
+  expiry_minutes: 15
   jwt_secret: ${JWT_SECRET}
   refresh_token_expiry_hours: 2

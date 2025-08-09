@@ -3,8 +3,10 @@ package middlewares
 import (
 	"net/http"
 
+	"github.com/fvrvz/auth-service-go/db"
 	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/fvrvz/auth-service-go/helpers"
+	"github.com/fvrvz/auth-service-go/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,11 +21,19 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := helpers.Verify(token)
+		claims, err := helpers.ExtractClaims(token)
 
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{
 				Error: err.Error(),
+			})
+			return
+		}
+
+		var blacklistedRecord models.AccessTokenBlacklist
+		if err := db.GetDB().First(&blacklistedRecord, models.AccessTokenBlacklist{JTI: claims.ID}).Error; err == nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{
+				Error: "Token is expired",
 			})
 			return
 		}

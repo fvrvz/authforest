@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -34,7 +33,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, refreshToken, err := generateAndReplaceRefreshToken(user.Username)
+	accessToken, refreshToken, err := generateTokensAndStoreRefreshToken(user.Username)
 
 	if err != nil {
 		log.Printf("Login token error: %v", err)
@@ -45,13 +44,56 @@ func Login(c *gin.Context) {
 	respondWithTokens(c, accessToken, refreshToken)
 }
 
-func Logout(c *gin.Context) {
-	c.JSON(http.StatusOK, dto.SuccessResponse[string]{
+func Logout(ctx *gin.Context) {
+	accessToken, err := helpers.ExtractTokenFromHeaders(ctx)
+
+	if err != nil {
+		log.Fatalf("token is missing %v", err.Error())
+		return
+	}
+
+	claims, err := helpers.ExtractClaims(accessToken)
+
+	if err != nil {
+		log.Fatalf("token expired or invalid >> %v", err.Error())
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Invalid or expired refresh token",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	blacklistRecord := models.AccessTokenBlacklist{
+		JTI:       claims.ID,
+		ExpiresAt: claims.ExpiresAt.Time,
+		IssuedAt:  claims.IssuedAt.Time,
+	}
+
+	if err := db.GetDB().FirstOrCreate(&blacklistRecord, models.AccessTokenBlacklist{JTI: claims.ID}).Error; err != nil {
+		log.Printf("Failed to blacklist the access token: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error:       "Failed to logout",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	//delete the refresh token associated with this accessToken claim ID
+	if err := db.GetDB().Delete(models.AuthRefreshTokens{}, models.AuthRefreshTokens{AccessTokenID: claims.ID}).Error; err != nil {
+		log.Printf("Failed to delete the refresh token associated with access token: %v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error:       "Failed to logout",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.SuccessResponse[string]{
 		Message: "User logged out successfully",
 	})
 }
 
-func RefreshToken(ctx *gin.Context) {
+func RotateRefreshToken(ctx *gin.Context) {
 	var req dto.RefreshTokenRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -62,7 +104,7 @@ func RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	claims, err := helpers.Verify(req.RefreshToken)
+	refreshTokenClaims, err := helpers.ExtractClaims(req.RefreshToken)
 
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
@@ -72,21 +114,35 @@ func RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	record, err := findValidRefreshToken(req.RefreshToken)
-
-	if err != nil {
-		log.Printf("Refresh token lookup failed: %v", err)
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{Error: "Refresh token not valid"})
-		return
-	}
-
-	if err := deleteRefreshToken(record); err != nil {
+	if err := db.GetDB().Where("jti = ? AND expires_at > ?", refreshTokenClaims.ID, time.Now()).Delete(models.AuthRefreshTokens{}).Error; err != nil {
 		log.Printf("Failed to delete refresh token: %v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Internal server error"})
 		return
 	}
 
-	accessToken, newRefreshToken, err := generateAndStoreNewTokens(claims.Subject)
+	accessToken, _ := helpers.ExtractTokenFromHeaders(ctx)
+
+	accessTokenClaims, err := helpers.ExtractClaims(accessToken)
+
+	if err == nil {
+		// black list the acccess token if not expired
+		blacklistRecord := models.AccessTokenBlacklist{
+			JTI:       accessTokenClaims.ID,
+			ExpiresAt: accessTokenClaims.ExpiresAt.Time,
+			IssuedAt:  accessTokenClaims.IssuedAt.Time,
+		}
+
+		if err := db.GetDB().FirstOrCreate(&blacklistRecord, models.AccessTokenBlacklist{JTI: accessTokenClaims.ID}).Error; err != nil {
+			log.Printf("Failed to blacklist the access token: %v", err)
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
+				Error:       "Failed to logout",
+				Description: err.Error(),
+			})
+			return
+		}
+	}
+
+	newAccessToken, newRefreshToken, err := generateTokensAndStoreRefreshToken(refreshTokenClaims.Subject)
 
 	if err != nil {
 		log.Printf("Failed to generate new tokens: %v", err)
@@ -97,26 +153,10 @@ func RefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	respondWithTokens(ctx, accessToken, newRefreshToken)
+	respondWithTokens(ctx, newAccessToken, newRefreshToken)
 }
 
-func findValidRefreshToken(refreshToken string) (*models.AuthRefreshTokens, error) {
-	hashedToken := helpers.Generate256Hash(refreshToken)
-
-	var record *models.AuthRefreshTokens
-
-	if err := db.GetDB().Where("token_hash = ? AND expiry_time > ?", hashedToken, time.Now()).First(&record).Error; err != nil {
-		return nil, err
-	}
-
-	return record, nil
-}
-
-func deleteRefreshToken(record *models.AuthRefreshTokens) error {
-	return db.GetDB().Delete(&record).Error
-}
-
-func generateAndStoreNewTokens(username string) (string, string, error) {
+func generateTokensAndStoreRefreshToken(username string) (string, string, error) {
 	config := config.GetConfig()
 
 	accessToken, refreshToken, err := helpers.GenerateJWT(config, username)
@@ -125,10 +165,24 @@ func generateAndStoreNewTokens(username string) (string, string, error) {
 		return "", "", err
 	}
 
+	accessTokenClaims, err := helpers.ExtractClaims(accessToken)
+
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshTokenClaims, err := helpers.ExtractClaims(refreshToken)
+
+	if err != nil {
+		return "", "", err
+	}
+
 	newRecord := models.AuthRefreshTokens{
-		Username:   username,
-		TokenHash:  helpers.Generate256Hash(refreshToken),
-		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
+		JTI:           refreshTokenClaims.ID,
+		Username:      username,
+		IssuedAt:      refreshTokenClaims.IssuedAt.Time,
+		ExpiresAt:     refreshTokenClaims.ExpiresAt.Time,
+		AccessTokenID: accessTokenClaims.ID,
 	}
 
 	if err := db.GetDB().Create(&newRecord).Error; err != nil {
@@ -150,7 +204,7 @@ func respondWithTokens(ctx *gin.Context, accessToken string, refreshToken string
 func authenticateUser(req dto.LoginRequest) (*models.User, error) {
 	var user models.User
 
-	if err := db.GetDB().Where("username = ? OR email = ?", req.UserId, req.UserId).First(&user).Error; err != nil {
+	if err := db.GetDB().Where(models.User{Username: req.UserId}).Or(models.User{Email: req.UserId}).First(&user).Error; err != nil {
 		return nil, err
 	}
 
@@ -160,33 +214,4 @@ func authenticateUser(req dto.LoginRequest) (*models.User, error) {
 	}
 
 	return &user, nil
-}
-
-func generateAndReplaceRefreshToken(username string) (string, string, error) {
-	config := config.GetConfig()
-	accessToken, refreshToken, err := helpers.GenerateJWT(config, username)
-
-	if err != nil {
-		return "", "", err
-	}
-
-	var existing models.AuthRefreshTokens
-
-	if err := db.GetDB().Where("username = ?", username).First(&existing).Error; err == nil {
-		if err := deleteRefreshToken(&existing); err != nil {
-			return "", "", fmt.Errorf("failed to delete existing refresh token: %w", err)
-		}
-	}
-
-	newRecord := models.AuthRefreshTokens{
-		Username:   username,
-		TokenHash:  helpers.Generate256Hash(refreshToken),
-		ExpiryTime: time.Now().Add(time.Duration(config.JWT.RefreshTokenExpiryHours) * time.Hour),
-	}
-
-	if err := db.GetDB().Create(&newRecord).Error; err != nil {
-		return "", "", fmt.Errorf("failed to save new refresh token: %w", err)
-	}
-
-	return accessToken, refreshToken, nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/fvrvz/auth-service-go/dto"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,13 +23,14 @@ func HashPassword(password string) (string, error) {
 }
 
 func GenerateJWT(cfg *dto.Config, username string) (accessToken string, refreshToken string, err error) {
-	expiration := time.Now().Add(time.Duration(cfg.JWT.ExpiryMinutes) * time.Minute)
+	now := time.Now()
 
 	accessClaims := jwt.RegisteredClaims{
+		ID:        uuid.New().String(),
 		Subject:   username,
 		Issuer:    "auth-service-go",
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(expiration),
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(cfg.JWT.ExpiryMinutes) * time.Minute)),
 	}
 
 	access := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -40,10 +42,11 @@ func GenerateJWT(cfg *dto.Config, username string) (accessToken string, refreshT
 	}
 
 	refreshClaims := jwt.RegisteredClaims{
+		ID:        uuid.New().String(),
 		Subject:   username,
 		Issuer:    "auth-service-go",
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.JWT.RefreshTokenExpiryHours) * time.Hour)),
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(cfg.JWT.RefreshTokenExpiryHours) * time.Hour)),
 	}
 
 	refresh := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -73,7 +76,7 @@ func ExtractTokenFromHeaders(ctx *gin.Context) (string, error) {
 	return parts[1], nil
 }
 
-func Verify(tokenString string) (*jwt.RegisteredClaims, error) {
+func ExtractClaims(tokenString string) (*jwt.RegisteredClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
