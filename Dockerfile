@@ -3,8 +3,8 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Install necessary build tools
-RUN apk add --no-cache git
+# Install git and SSL certificates
+RUN apk add --no-cache git ca-certificates
 
 # Cache dependencies
 COPY go.mod go.sum ./
@@ -14,14 +14,14 @@ RUN go mod download
 COPY . .
 
 # Build the binary
-RUN go build -o auth-service-go ./...
+RUN go build -o auth-service-go .
 
 # Stage 2: Create a minimal runtime image
 FROM alpine:3.22
 
 WORKDIR /app
 
-# Install SSL certs (optional, but often needed)
+# Install CA certificates for HTTPS support
 RUN apk add --no-cache ca-certificates
 
 # Copy binary from builder
