@@ -34,7 +34,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{hostname}}/api/{{apiVersion}}/users/tester1",
+							"raw": "{{hostname}}/api/{{apiVersion}}/users/defaultuser",
 							"host": [
 								"{{hostname}}"
 							],
@@ -42,7 +42,7 @@
 								"api",
 								"{{apiVersion}}",
 								"users",
-								"tester1"
+								"defaultuser"
 							]
 						}
 					},
@@ -54,7 +54,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{hostname}}/api/{{apiVersion}}/users/tester",
+							"raw": "{{hostname}}/api/{{apiVersion}}/users/tester1",
 							"host": [
 								"{{hostname}}"
 							],
@@ -62,7 +62,7 @@
 								"api",
 								"{{apiVersion}}",
 								"users",
-								"tester"
+								"tester1"
 							]
 						}
 					},
@@ -139,7 +139,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"userId\": \"tester1\",\r\n    \"password\": \"test123456\"\r\n}",
+							"raw": "{\r\n    \"userId\": \"defaultuser\",\r\n    \"password\": \"defaultuserpass\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -209,6 +209,38 @@
 								"{{apiVersion}}",
 								"auth",
 								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{hostname}}/api/{{apiVersion}}/auth/logout",
+							"host": [
+								"{{hostname}}"
+							],
+							"path": [
+								"api",
+								"{{apiVersion}}",
+								"auth",
+								"logout"
 							]
 						}
 					},
