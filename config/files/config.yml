@@ -16,11 +16,11 @@ server:
       - Content-Type
 
 database:
-  host: localhost
-  port: 5432
+  host: ${DB_HOST}
+  port: ${DB_PORT}
   username: ${DB_USER}
   password: ${DB_PASSWORD}
-  db: auth-service-go
+  db: ${DB_NAME}
   sslmode: disable
   time_zone: UTC
 
