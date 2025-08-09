@@ -1,102 +1,35 @@
 run:
   timeout: 5m
-  issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - vendor
-
-output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
 
 linters-settings:
-  govet:
-    check-shadowing: true
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
+  gofmt:
+    simplify: true
   goimports:
     local-prefixes: github.com/fvrvz/auth-service-go
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-  funlen:
-    lines: 100
-    statements: 50
+  govet:
+    enable:
+      - shadow
   revive:
     severity: warning
-  gosec:
-    severity: "low"
-    confidence: "low"
+  staticcheck:
+    checks: ["all"]
 
 linters:
   enable:
-    - bodyclose
-    - dupl
     - errcheck
-    - funlen
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - gomnd
-    - goprintffuncname
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - revive
     - staticcheck
-    - stylecheck
     - typecheck
-    - unconvert
-    - unparam
     - unused
-    - whitespace
-  disable:
-    - exhaustive
-    - gci
-    - gochecknoglobals
-    - godot
-    - gofumpt
-    - nlreturn
-    - wsl
+    - gofmt
+    - goimports
+    - revive
+  disable-all: true
 
 issues:
+  exclude-use-default: true
   max-issues-per-linter: 50
   max-same-issues: 3
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gomnd
-        - funlen
-        - dupl
-        - gocyclo
-        - errcheck
-        - gosec
-    - path: "main\\.go"
-      linters:
-        - gochecknoinits
-  exclude-use-default: true

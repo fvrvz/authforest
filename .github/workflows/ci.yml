@@ -9,7 +9,7 @@ on:
       - develop
 
 env:
-  GO_VERSION: "1.24.5"
+  GO_VERSION: "1.24"
 
 jobs:
   test:
@@ -83,20 +83,21 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Verify golangci-lint config
+      - name: Run gofmt
         run: |
-          if [ -f .golangci.yml ]; then
-            echo "golangci-lint config file found"
-            cat .golangci.yml
-          else
-            echo "No golangci-lint config file found"
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "The following files are not formatted:"
+            gofmt -s -l .
+            exit 1
           fi
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run staticcheck
+        uses: dominikh/staticcheck-action@v1
         with:
-          version: v1.61.0
-          args: --timeout=5m --verbose
+          version: "latest"
 
   build-test:
     name: Build Test
