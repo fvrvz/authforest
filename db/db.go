@@ -9,6 +9,7 @@ import (
 	"github.com/fvrvz/auth-service-go/constants"
 	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
+	"github.com/fvrvz/gologger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -33,17 +34,17 @@ func Init() {
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		log.Fatalf("Failed to connect to DB: %v", err)
+		log.Fatalf("Failed to connect to DB: %+v", err)
 	}
 
 	if err := db.AutoMigrate(&models.User{}, &models.AuthRefreshTokens{}, &models.AccessTokenBlacklist{}); err != nil {
-		log.Fatalf("Migration failed %v", err)
+		log.Fatalf("Migration failed %+v", err)
 	}
 
 	hashedPass, err := helpers.HashPassword(constants.DEFAULT_USER_PASS)
 
 	if err != nil {
-		log.Fatalln("Unable to hash password for default user")
+		gologger.ERROR("Unable to hash password for default user: %+v", err)
 	}
 
 	initialUser := models.User{
@@ -56,9 +57,9 @@ func Init() {
 	}
 
 	if err := db.FirstOrCreate(&initialUser, models.User{Username: constants.DEFAULT_USERNAME}).Error; err != nil {
-		log.Fatalf("Failed to create default user: %v", err)
+		gologger.ERROR("Failed to create default user: %+v", err)
 	} else {
-		log.Printf("Use default user to login. Username: '%s' with Password: '%s'", constants.DEFAULT_USERNAME, constants.DEFAULT_USER_PASS)
+		gologger.INFO("Use default user to login. Username: '%s' with Password: '%s'", constants.DEFAULT_USERNAME, constants.DEFAULT_USER_PASS)
 	}
 
 }
