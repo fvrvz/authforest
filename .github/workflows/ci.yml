@@ -1,12 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - develop
   pull_request:
     branches:
       - develop
+      - main
 
 env:
   GO_VERSION: "1.24"
