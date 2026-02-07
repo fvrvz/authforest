@@ -43,7 +43,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	respondWithTokens(c, accessToken, refreshToken)
+	respondWithTokens(c, accessToken, refreshToken, user)
 }
 
 func Logout(ctx *gin.Context) {
@@ -140,7 +140,7 @@ func RotateRefreshToken(ctx *gin.Context) {
 		return
 	}
 
-	respondWithTokens(ctx, newAccessToken, newRefreshToken)
+	respondWithTokens(ctx, newAccessToken, newRefreshToken, nil)
 }
 
 func generateTokensAndStoreRefreshToken(username string) (string, string, error) {
@@ -179,13 +179,19 @@ func generateTokensAndStoreRefreshToken(username string) (string, string, error)
 	return accessToken, refreshToken, nil
 }
 
-func respondWithTokens(ctx *gin.Context, accessToken string, refreshToken string) {
-	ctx.JSON(http.StatusOK, dto.AuthResponse{
+func respondWithTokens(ctx *gin.Context, accessToken string, refreshToken string, user *models.User) {
+	response := dto.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    constants.BEARER,
 		ExpiresIn:    config.GetConfig().JWT.ExpiryMinutes * 60,
-	})
+	}
+
+	if user != nil {
+		response.Profile = *dto.ToUserDTO(user)
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 func authenticateUser(req dto.LoginRequest) (*models.User, error) {

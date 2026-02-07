@@ -140,9 +140,19 @@ If you prefer to run the application without Docker:
    Modify `config/files/config.yml` if needed for custom settings like CORS origins or JWT expiry times.
 
 6. **Build and run the application**
+
    ```bash
+   # Build the binary
    go build -o auth-service-go .
+
+   # Run the compiled binary
    ./auth-service-go
+
+   # Build a Windows executable
+   go build -o auth-service-go.exe
+
+   # Or, for development, run directly
+   go run .
    ```
 
 The application will start on port 8080 (configurable in `config.yml`).
@@ -158,8 +168,9 @@ The application will start on port 8080 (configurable in `config.yml`).
 
 - `GET /api/v1/auth/logout` - User logout
 - `POST /api/v1/auth/refresh` - Refresh JWT token
-- `GET /api/v1/users/` - Get all users
+- `GET /api/v1/users` - Get all users
 - `GET /api/v1/users/:userId` - Get specific user
+- `PATCH /api/v1/users/:userId` - Update specific user
 - `DELETE /api/v1/users/:userId` - Delete user
 
 ### API Testing
