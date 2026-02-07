@@ -7,6 +7,9 @@ import (
 type User struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	ID        uint64
+	UpdatedBy *string
+	CreatedBy string
 
 	Username  string    `gorm:"primarykey;unique;not null"`
 	Email     string    `gorm:"unique;not null"`

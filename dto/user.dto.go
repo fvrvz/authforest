@@ -4,7 +4,7 @@ import "github.com/fvrvz/auth-service-go/models"
 
 type UserDTO struct {
 	BaseModel
-	FullName  string `json:"fullName"`
+	FullName  string `json:"fullName" gorm:"->"`
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
@@ -30,10 +30,11 @@ func ToUserDTO(user *models.User) *UserDTO {
 		Username:  user.Username,
 		DOB:       user.DOB.String(),
 		BaseModel: BaseModel{
-			CreatedAt:  user.CreatedAt,
-			CreatedBy:  user.Username,
-			ModifiedAt: &user.UpdatedAt,
-			ModifiedBy: nil,
+			ID:        user.ID,
+			CreatedAt: user.CreatedAt,
+			CreatedBy: user.Username,
+			UpdatedAt: &user.UpdatedAt,
+			UpdatedBy: user.UpdatedBy,
 		},
 	}
 }

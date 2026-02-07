@@ -17,7 +17,7 @@ import (
 func GetUsers(ctx *gin.Context) {
 	var users []dto.UserDTO
 
-	if err := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at").Scan(&users).Error; err != nil {
+	if err := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at, updated_at, updated_by, created_by, username").Scan(&users).Error; err != nil {
 		gologger.ERROR("Unable to get all users %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Failed to get all users",
@@ -149,7 +149,7 @@ func GetUser(ctx *gin.Context) {
 
 	var user dto.UserDTO
 
-	result := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at").Where(models.User{Username: username}).Scan(&user)
+	result := db.GetDB().Model(&models.User{}).Select("first_name, last_name, email, first_name || ' ' || last_name AS full_name, dob, created_at, updated_at, updated_by, created_by, username").Where(models.User{Username: username}).Scan(&user)
 
 	if err := result.Error; err != nil {
 		gologger.ERROR("Failed to delete: %+v", err)
