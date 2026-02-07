@@ -21,6 +21,13 @@ type RegisterRequest struct {
 	DOB       string `json:"DOB" binding:"required,datetime=2006-01-02"`
 }
 
+type UpdateUserRequest struct {
+	Email     *string `json:"email" binding:"omitempty,email"`
+	FirstName *string `json:"firstName"`
+	LastName  *string `json:"lastName"`
+	DOB       *string `json:"DOB" binding:"omitempty,datetime=2006-01-02"`
+}
+
 func ToUserDTO(user *models.User) *UserDTO {
 	return &UserDTO{
 		FullName:  user.FirstName + " " + user.LastName,
@@ -33,7 +40,7 @@ func ToUserDTO(user *models.User) *UserDTO {
 			ID:        user.ID,
 			CreatedAt: user.CreatedAt,
 			CreatedBy: user.Username,
-			UpdatedAt: &user.UpdatedAt,
+			UpdatedAt: user.UpdatedAt,
 			UpdatedBy: user.UpdatedBy,
 		},
 	}

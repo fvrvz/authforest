@@ -11,6 +11,7 @@ func SetupUserPrivateRoutes(r *gin.RouterGroup) {
 		users.GET("", services.GetUsers)
 		users.GET("/:userId", services.GetUser)
 		users.DELETE("/:userId", services.Delete)
+		users.PATCH("/:userId", services.UpdateUser)
 	}
 }
 

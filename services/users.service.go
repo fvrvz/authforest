@@ -12,6 +12,7 @@ import (
 	"github.com/fvrvz/auth-service-go/models"
 	"github.com/fvrvz/gologger"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm/clause"
 )
 
 func GetUsers(ctx *gin.Context) {
@@ -83,6 +84,7 @@ func Register(c *gin.Context) {
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		DOB:       normalizedDOB,
+		CreatedBy: req.Username,
 	}
 
 	if err := db.GetDB().Create(&user).Error; err != nil {
@@ -152,7 +154,7 @@ func GetUser(ctx *gin.Context) {
 	result := db.GetDB().Model(&models.User{}).Select("users.*, first_name || ' ' || last_name AS full_name").Where(models.User{Username: username}).Scan(&user)
 
 	if err := result.Error; err != nil {
-		gologger.ERROR("Failed to delete: %+v", err)
+		gologger.ERROR("Failed to fetch user: %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Database error while fetching: " + username,
 			Description: "Unexpected error",
@@ -172,5 +174,91 @@ func GetUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusFound, dto.SuccessResponse[dto.UserDTO]{
 		Data:    user,
 		Message: "User fetched successfully",
+	})
+}
+
+func UpdateUser(ctx *gin.Context) {
+	username, ok := ctx.Params.Get("userId")
+
+	if !ok {
+		gologger.ERROR("userId param not found")
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error: "UserId : '" + username + "' not passed correctly",
+		})
+		return
+	}
+
+	var req dto.UpdateUserRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{
+			Error:       "Invalid Input",
+			Description: err.Error(),
+		})
+		return
+	}
+
+	updates := map[string]any{}
+
+	if req.FirstName != nil {
+		updates["first_name"] = *req.FirstName
+	}
+	if req.LastName != nil {
+		updates["last_name"] = *req.LastName
+	}
+	if req.Email != nil {
+		updates["email"] = *req.Email
+	}
+	if req.DOB != nil {
+		dob, err := time.Parse(constants.DATE_FORMAT, *req.DOB)
+
+		if err != nil {
+			gologger.ERROR("Invalid date: %+v", err)
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid date format"})
+			return
+		}
+
+		updates["dob"] = helpers.NormalizeDate(dob)
+	}
+
+	if len(updates) == 0 {
+		ctx.JSON(http.StatusNoContent, dto.ErrorResponse{
+			Error: "No Fields to Update",
+		})
+		return
+	}
+
+	updates["updated_at"] = time.Now()
+	updates["updated_by"] = username
+
+	var user models.User
+
+	result := db.GetDB().
+		Model(&user).
+		Where(models.User{Username: username}).
+		Clauses(clause.Returning{}).
+		Updates(&updates)
+
+	if err := result.Error; err != nil {
+		gologger.ERROR("Failed to update: %+v", err)
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
+			Error:       "Database error while fetching: " + username,
+			Description: "Unexpected error",
+		})
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		gologger.INFO("User not found")
+		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
+			Error:       "User not found",
+			Description: fmt.Sprintf("No user with username (%s) exists", username),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusFound, dto.SuccessResponse[dto.UserDTO]{
+		Data:    *dto.ToUserDTO(&user),
+		Message: "User updated successfully",
 	})
 }

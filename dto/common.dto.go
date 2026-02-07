@@ -1,13 +1,17 @@
 package dto
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type BaseModel struct {
-	ID        uint64     `json:"id"`
-	CreatedAt time.Time  `json:"createdAt"`
-	CreatedBy string     `json:"createdBy"`
-	UpdatedAt *time.Time `json:"updatedAt"`
-	UpdatedBy *string    `json:"updatedBy"`
+	ID        uuid.UUID  `json:"id"`
+	CreatedAt time.Time  `json:"createdAt" gorm:"-"`
+	CreatedBy string     `json:"createdBy" gorm:"-"`
+	UpdatedAt *time.Time `json:"updatedAt" gorm:"-"`
+	UpdatedBy *string    `json:"updatedBy" gorm:"-"`
 }
 
 type SuccessResponse[TData any] struct {
