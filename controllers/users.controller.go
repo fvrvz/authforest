@@ -8,7 +8,7 @@ import (
 func SetupUserPrivateRoutes(r *gin.RouterGroup) {
 	users := r.Group("/users")
 	{
-		users.GET("/", services.GetUsers)
+		users.GET("", services.GetUsers)
 		users.GET("/:userId", services.GetUser)
 		users.DELETE("/:userId", services.Delete)
 	}
