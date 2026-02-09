@@ -3,7 +3,7 @@ server:
   cors:
     allowOrigins:
       - http://localhost:5173
-      - https://fvrvz.github.io/idp-frontend-svelte
+      - https://fvrvz.github.io
     allowCredentials: true
     maxAge: 24
     allowMethods:
@@ -16,6 +16,9 @@ server:
     allowHeaders:
       - Authorization
       - Content-Type
+      - Accept
+      - Origin
+      - X-Requested-With
 
 database:
   host: ${DB_HOST}
