@@ -6,13 +6,14 @@ type Server struct {
 }
 
 type Database struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	DB       string `yaml:"db"`
-	SSLMode  string `yaml:"sslmode"`
-	TimeZone string `yaml:"time_zone"`
+	Host           string `yaml:"host"`
+	Port           int    `yaml:"port"`
+	Username       string `yaml:"username"`
+	Password       string `yaml:"password"`
+	DB             string `yaml:"db"`
+	SSLMode        string `yaml:"sslmode"`
+	TimeZone       string `yaml:"time_zone"`
+	ChannelBinding string `yaml:"channel_binding"`
 }
 
 type JWT struct {

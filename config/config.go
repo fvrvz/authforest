@@ -22,15 +22,13 @@ func resolveEnvPlaceholders(content string) string {
 
 func Init(yamlPath string, envPath string) {
 	if err := godotenv.Load(envPath); err != nil {
-		log.Fatalf("Failed to load config: %v", err)
-		return
+		log.Println("No .env file found, using environment variables")
 	}
 
 	raw, err := os.ReadFile(yamlPath)
 
 	if err != nil {
 		log.Fatalf("Failed to read config: %v", err)
-		return
 	}
 
 	parsed := resolveEnvPlaceholders(string(raw))
@@ -39,7 +37,6 @@ func Init(yamlPath string, envPath string) {
 
 	if err := yaml.Unmarshal([]byte(parsed), config); err != nil {
 		log.Fatalf("Failed to serialize config: %v", err)
-		return
 	}
 
 	log.Println("Config loaded successfully")
