@@ -132,6 +132,8 @@ If you prefer to run the application without Docker:
    DB_USER=your_username
    DB_PASSWORD=your_password
    DB_NAME=auth-service-go
+   DB_SSLMODE=disable
+   DB_CHANNEL_BINDING=disable
    JWT_SECRET=your-jwt-secret-key
    ```
 

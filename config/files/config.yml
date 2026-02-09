@@ -3,6 +3,7 @@ server:
   cors:
     allowOrigins:
       - http://localhost:5173
+      - https://fvrvz.github.io/idp-frontend-svelte
     allowCredentials: true
     maxAge: 24
     allowMethods:
@@ -11,6 +12,7 @@ server:
       - DELETE
       - OPTIONS
       - HEAD
+      - PATCH
     allowHeaders:
       - Authorization
       - Content-Type
@@ -21,8 +23,9 @@ database:
   username: ${DB_USER}
   password: ${DB_PASSWORD}
   db: ${DB_NAME}
-  sslmode: disable
+  sslmode: ${DB_SSLMODE}
   time_zone: UTC
+  channel_binding: ${DB_CHANNEL_BINDING}
 
 jwt:
   expiry_minutes: 15
