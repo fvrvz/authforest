@@ -276,6 +276,317 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "OIDC",
+      "item": [
+        {
+          "name": "Discovery",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hostname}}/.well-known/openid-configuration",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                ".well-known",
+                "openid-configuration"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "JWKS",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hostname}}/.well-known/jwks.json",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Authorize",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hostname}}/oauth2/authorize?response_type=code&client_id={{oidcClientId}}&redirect_uri={{oidcRedirectUri}}&scope=openid profile email&state=random_state&nonce=random_nonce&code_challenge={{oidcCodeChallenge}}&code_challenge_method=S256",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                "oauth2",
+                "authorize"
+              ],
+              "query": [
+                {
+                  "key": "response_type",
+                  "value": "code"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{oidcClientId}}"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{oidcRedirectUri}}"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid profile email"
+                },
+                {
+                  "key": "state",
+                  "value": "random_state"
+                },
+                {
+                  "key": "nonce",
+                  "value": "random_nonce"
+                },
+                {
+                  "key": "code_challenge",
+                  "value": "{{oidcCodeChallenge}}"
+                },
+                {
+                  "key": "code_challenge_method",
+                  "value": "S256"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token Exchange (Auth Code)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set(\"oidcAccessToken\", json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "    pm.collectionVariables.set(\"oidcRefreshToken\", json.refresh_token);",
+                  "}",
+                  "if (json.id_token) {",
+                  "    pm.collectionVariables.set(\"oidcIdToken\", json.id_token);",
+                  "}",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "authorization_code",
+                  "type": "text"
+                },
+                {
+                  "key": "code",
+                  "value": "{{oidcAuthCode}}",
+                  "type": "text"
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "{{oidcRedirectUri}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{oidcClientId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "code_verifier",
+                  "value": "{{oidcCodeVerifier}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{hostname}}/oauth2/token",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                "oauth2",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Token Exchange (Refresh Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set(\"oidcAccessToken\", json.access_token);",
+                  "}",
+                  "if (json.refresh_token) {",
+                  "    pm.collectionVariables.set(\"oidcRefreshToken\", json.refresh_token);",
+                  "}",
+                  "if (json.id_token) {",
+                  "    pm.collectionVariables.set(\"oidcIdToken\", json.id_token);",
+                  "}",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "type": "text"
+                },
+                {
+                  "key": "refresh_token",
+                  "value": "{{oidcRefreshToken}}",
+                  "type": "text"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{oidcClientId}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{hostname}}/oauth2/token",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                "oauth2",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UserInfo",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{oidcAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{hostname}}/oauth2/userinfo",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                "oauth2",
+                "userinfo"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let json = pm.response.json();",
+                  "if (json.client_id) {",
+                  "    pm.collectionVariables.set(\"oidcClientId\", json.client_id);",
+                  "}",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"client_name\": \"Test SPA\",\n    \"client_type\": \"public\",\n    \"redirect_uris\": [\"http://localhost:4200/callback\"],\n    \"scopes\": \"openid profile email offline_access\",\n    \"grant_types\": \"authorization_code\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{hostname}}/api/{{apiVersion}}/oauth2/register",
+              "host": [
+                "{{hostname}}"
+              ],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "oauth2",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -329,6 +640,46 @@
     {
       "key": "refreshToken",
       "value": ""
+    },
+    {
+      "key": "oidcClientId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcRedirectUri",
+      "value": "http://localhost:4200/callback",
+      "type": "default"
+    },
+    {
+      "key": "oidcAuthCode",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcCodeChallenge",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcCodeVerifier",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcAccessToken",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcRefreshToken",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "oidcIdToken",
+      "value": "",
+      "type": "default"
     }
   ]
 }

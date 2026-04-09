@@ -13,7 +13,13 @@ import (
 func InitRouter() *gin.Engine {
 	router := gin.Default()
 
+	// Load HTML templates for the OIDC login/consent pages
+	router.LoadHTMLGlob("templates/*")
+
 	setupCors(router)
+
+	// OIDC/OAuth2 routes (at root level per spec)
+	controllers.SetupOIDCRoutes(router)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -23,6 +29,7 @@ func InitRouter() *gin.Engine {
 		privateGroup := v1.Group("/", middlewares.AuthMiddleware())
 		controllers.SetupUserPrivateRoutes(privateGroup)
 		controllers.SetupAuthPrivateRoutes(privateGroup)
+		controllers.SetupOIDCPrivateRoutes(privateGroup)
 	}
 
 	return router

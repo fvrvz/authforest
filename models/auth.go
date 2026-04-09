@@ -8,6 +8,7 @@ type AuthRefreshTokens struct {
 	ExpiresAt     time.Time `gorm:"not null"`
 	IssuedAt      time.Time `gorm:"not null"`
 	AccessTokenID string    `gorm:"not null"`
+	Scope         string    `gorm:"default:''"` // space-separated scopes for OIDC tokens
 }
 
 type AccessTokenBlacklist struct {
