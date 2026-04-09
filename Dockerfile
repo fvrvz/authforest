@@ -9,6 +9,9 @@ RUN apk add --no-cache ca-certificates git tzdata
 # Create non-root user for security
 RUN adduser -D -g '' appuser
 
+# Create writable data directory owned by appuser
+RUN mkdir -p /data && chown appuser:appuser /data
+
 # Cache dependencies
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
@@ -32,6 +35,14 @@ COPY --from=builder /etc/passwd /etc/passwd
 
 # Copy binary from builder
 COPY --from=builder /app/auth-service-go /auth-service-go
+
+# Copy config files and templates
+COPY --from=builder /app/config/files/ /config/files/
+COPY --from=builder /app/templates/ /templates/
+
+# Copy writable data directory for RSA key persistence
+COPY --from=builder /etc/group /etc/group
+COPY --from=builder --chown=appuser:appuser /data /data
 
 # Use non-root user
 USER appuser

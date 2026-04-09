@@ -21,10 +21,25 @@ type JWT struct {
 	RefreshTokenExpiryHours int    `yaml:"refresh_token_expiry_hours"`
 }
 
+type OIDC struct {
+	Issuer     string `yaml:"issuer"`
+	RSAKeyPath string `yaml:"rsa_key_path"`
+}
+
+type SMTP struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	From     string `yaml:"from"`
+}
+
 type Config struct {
 	Server   Server   `yaml:"server"`
 	Database Database `yaml:"database"`
 	JWT      JWT      `yaml:"jwt"`
+	OIDC     OIDC     `yaml:"oidc"`
+	SMTP     SMTP     `yaml:"smtp"`
 }
 
 type CorsConfig struct {

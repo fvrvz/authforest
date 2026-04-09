@@ -37,9 +37,15 @@ func Init() {
 		log.Fatalf("Failed to connect to DB: %+v", err)
 	}
 
-	if err := db.AutoMigrate(&models.User{}, &models.AuthRefreshTokens{}, &models.AccessTokenBlacklist{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.AuthRefreshTokens{}, &models.AccessTokenBlacklist{}, &models.OAuthClient{}, &models.AuthorizationCode{}, &models.Role{}, &models.UserRole{}, &models.PasswordResetToken{}); err != nil {
 		log.Fatalf("Migration failed %+v", err)
 	}
+
+	// Seed default roles
+	adminRole := models.Role{Name: "admin", Description: "Full system administrator"}
+	db.FirstOrCreate(&adminRole, models.Role{Name: "admin"})
+	userRole := models.Role{Name: "user", Description: "Standard user"}
+	db.FirstOrCreate(&userRole, models.Role{Name: "user"})
 
 	hashedPass, err := helpers.HashPassword(constants.DEFAULT_USER_PASS)
 
@@ -60,6 +66,24 @@ func Init() {
 		gologger.ERROR("Failed to create default user: %+v", err)
 	} else {
 		gologger.INFO("Use default user to login. Username: '%s' with Password: '%s'", constants.DEFAULT_USERNAME, constants.DEFAULT_USER_PASS)
+		// Assign admin role to default user
+		db.Model(&initialUser).Association("Roles").Replace([]models.Role{adminRole})
+	}
+
+	// Seed admin panel OAuth client (public client for the SPA)
+	adminClient := models.OAuthClient{
+		ClientID:     constants.ADMIN_PANEL_CLIENT_ID,
+		ClientName:   constants.ADMIN_PANEL_CLIENT_NAME,
+		ClientType:   "public",
+		RedirectURIs: []string{"http://localhost:5173/callback", "https://fvrvz.github.io/idp-frontend-svelte/callback"},
+		Scopes:       "openid profile email",
+		GrantTypes:   "authorization_code",
+	}
+
+	if err := db.FirstOrCreate(&adminClient, models.OAuthClient{ClientID: constants.ADMIN_PANEL_CLIENT_ID}).Error; err != nil {
+		gologger.ERROR("Failed to create admin panel OAuth client: %+v", err)
+	} else {
+		gologger.INFO("Admin panel OAuth client registered with client_id: '%s'", constants.ADMIN_PANEL_CLIENT_ID)
 	}
 
 }

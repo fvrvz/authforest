@@ -13,10 +13,15 @@ import (
 var config *dto.Config
 
 func resolveEnvPlaceholders(content string) string {
-	re := regexp.MustCompile(`\$\{(\w+)\}`)
+	re := regexp.MustCompile(`\$\{(\w+)(?::-(.*?))?\}`)
 	return re.ReplaceAllStringFunc(content, func(match string) string {
-		key := re.FindStringSubmatch(match)[1]
-		return os.Getenv(key)
+		parts := re.FindStringSubmatch(match)
+		key := parts[1]
+		defaultVal := parts[2]
+		if val := os.Getenv(key); val != "" {
+			return val
+		}
+		return defaultVal
 	})
 }
 

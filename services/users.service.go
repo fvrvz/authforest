@@ -16,9 +16,9 @@ import (
 )
 
 func GetUsers(ctx *gin.Context) {
-	var users []dto.UserDTO
+	var users []models.User
 
-	if err := db.GetDB().Model(&models.User{}).Select("users.*, first_name || ' ' || last_name AS full_name").Scan(&users).Error; err != nil {
+	if err := db.GetDB().Preload("Roles").Find(&users).Error; err != nil {
 		gologger.ERROR("Unable to get all users %+v", err)
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
 			Error:       "Failed to get all users",
@@ -27,13 +27,14 @@ func GetUsers(ctx *gin.Context) {
 		return
 	}
 
-	if users == nil {
-		users = []dto.UserDTO{}
+	result := make([]dto.UserDTO, len(users))
+	for i, u := range users {
+		result[i] = *dto.ToUserDTO(&u)
 	}
 
 	ctx.JSON(http.StatusOK, dto.SuccessResponse[[]dto.UserDTO]{
 		Message: "Users fetched successfully",
-		Data:    users,
+		Data:    result,
 	})
 }
 
@@ -149,21 +150,12 @@ func GetUser(ctx *gin.Context) {
 		return
 	}
 
-	var user dto.UserDTO
+	var user models.User
 
-	result := db.GetDB().Model(&models.User{}).Select("users.*, first_name || ' ' || last_name AS full_name").Where(models.User{Username: username}).Scan(&user)
+	result := db.GetDB().Preload("Roles").Where("username = ?", username).First(&user)
 
 	if err := result.Error; err != nil {
 		gologger.ERROR("Failed to fetch user: %+v", err)
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, dto.ErrorResponse{
-			Error:       "Database error while fetching: " + username,
-			Description: "Unexpected error",
-		})
-		return
-	}
-
-	if result.RowsAffected == 0 {
-		gologger.INFO("User not found")
 		ctx.AbortWithStatusJSON(http.StatusNotFound, dto.ErrorResponse{
 			Error:       "User not found",
 			Description: fmt.Sprintf("No user with username (%s) exists", username),
@@ -171,8 +163,8 @@ func GetUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusFound, dto.SuccessResponse[dto.UserDTO]{
-		Data:    user,
+	ctx.JSON(http.StatusOK, dto.SuccessResponse[*dto.UserDTO]{
+		Data:    dto.ToUserDTO(&user),
 		Message: "User fetched successfully",
 	})
 }
@@ -257,8 +249,134 @@ func UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusFound, dto.SuccessResponse[dto.UserDTO]{
+	ctx.JSON(http.StatusOK, dto.SuccessResponse[dto.UserDTO]{
 		Data:    *dto.ToUserDTO(&user),
+		Message: "User updated successfully",
+	})
+}
+
+// AdminCreateUser creates a user with roles assigned (POST /api/v1/users/create).
+func AdminCreateUser(ctx *gin.Context) {
+	var req dto.AdminCreateUserRequest
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid input", Description: err.Error()})
+		return
+	}
+
+	var existing models.User
+	if err := db.GetDB().First(&existing, models.User{Username: req.Username}).Error; err == nil {
+		ctx.JSON(http.StatusConflict, dto.ErrorResponse{Error: "User already exists"})
+		return
+	}
+
+	hashedPassword, err := helpers.HashPassword(req.Password)
+	if err != nil {
+		gologger.ERROR("Failed to hash password: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to hash password"})
+		return
+	}
+
+	dob, err := time.Parse(constants.DATE_FORMAT, req.DOB)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid date format"})
+		return
+	}
+
+	user := models.User{
+		Username:  req.Username,
+		Password:  hashedPassword,
+		Email:     req.Email,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		DOB:       helpers.NormalizeDate(dob),
+		CreatedBy: req.Username,
+	}
+
+	if err := db.GetDB().Create(&user).Error; err != nil {
+		gologger.ERROR("Failed to create user: %+v", err)
+		ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to create user"})
+		return
+	}
+
+	// Assign roles if provided
+	if len(req.RoleIDs) > 0 {
+		var roles []models.Role
+		if err := db.GetDB().Where("id IN ?", req.RoleIDs).Find(&roles).Error; err == nil {
+			db.GetDB().Model(&user).Association("Roles").Replace(roles)
+		}
+	}
+
+	db.GetDB().Preload("Roles").First(&user, user.ID)
+
+	ctx.JSON(http.StatusCreated, dto.SuccessResponse[*dto.UserDTO]{
+		Message: "User created successfully",
+		Data:    dto.ToUserDTO(&user),
+	})
+}
+
+// AdminUpdateUser updates a user including role assignments (PATCH /api/v1/users/:userId/admin).
+func AdminUpdateUser(ctx *gin.Context) {
+	username, ok := ctx.Params.Get("userId")
+	if !ok {
+		ctx.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "userId param not found"})
+		return
+	}
+
+	var req dto.AdminUpdateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid input", Description: err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := db.GetDB().Where("username = ?", username).First(&user).Error; err != nil {
+		ctx.JSON(http.StatusNotFound, dto.ErrorResponse{Error: "User not found"})
+		return
+	}
+
+	updates := map[string]any{}
+	if req.FirstName != nil {
+		updates["first_name"] = *req.FirstName
+	}
+	if req.LastName != nil {
+		updates["last_name"] = *req.LastName
+	}
+	if req.Email != nil {
+		updates["email"] = *req.Email
+	}
+	if req.DOB != nil {
+		dob, err := time.Parse(constants.DATE_FORMAT, *req.DOB)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, dto.ErrorResponse{Error: "Invalid date format"})
+			return
+		}
+		updates["dob"] = helpers.NormalizeDate(dob)
+	}
+
+	if len(updates) > 0 {
+		updates["updated_at"] = time.Now()
+		updates["updated_by"] = username
+		if err := db.GetDB().Model(&user).Updates(updates).Error; err != nil {
+			gologger.ERROR("Failed to update user: %+v", err)
+			ctx.JSON(http.StatusInternalServerError, dto.ErrorResponse{Error: "Failed to update user"})
+			return
+		}
+	}
+
+	// Update role assignments
+	if req.RoleIDs != nil {
+		var roles []models.Role
+		if len(req.RoleIDs) > 0 {
+			db.GetDB().Where("id IN ?", req.RoleIDs).Find(&roles)
+		}
+		db.GetDB().Model(&user).Association("Roles").Replace(roles)
+	}
+
+	db.GetDB().Preload("Roles").First(&user, user.ID)
+
+	ctx.JSON(http.StatusOK, dto.SuccessResponse[*dto.UserDTO]{
+		Data:    dto.ToUserDTO(&user),
 		Message: "User updated successfully",
 	})
 }

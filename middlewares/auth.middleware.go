@@ -8,6 +8,7 @@ import (
 	"github.com/fvrvz/auth-service-go/helpers"
 	"github.com/fvrvz/auth-service-go/models"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -21,13 +22,19 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		claims, err := helpers.ExtractClaims(token)
+		// Try HS256 (legacy) first, then RS256 (OIDC access tokens)
+		var claims *jwt.RegisteredClaims
 
+		claims, err = helpers.ExtractClaims(token)
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{
-				Error: err.Error(),
-			})
-			return
+			// Fallback: try RS256 OIDC access token
+			claims, err = helpers.ExtractRSAClaims(token)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, dto.ErrorResponse{
+					Error: "Invalid or expired token",
+				})
+				return
+			}
 		}
 
 		var blacklistedRecord models.AccessTokenBlacklist

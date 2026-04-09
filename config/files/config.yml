@@ -34,3 +34,14 @@ jwt:
   expiry_minutes: 15
   jwt_secret: ${JWT_SECRET}
   refresh_token_expiry_hours: 2
+
+oidc:
+  issuer: ${OIDC_ISSUER}
+  rsa_key_path: ${RSA_KEY_PATH:-rsa_private.pem}
+
+smtp:
+  host: ${SMTP_HOST:-localhost}
+  port: ${SMTP_PORT:-587}
+  username: ${SMTP_USERNAME}
+  password: ${SMTP_PASSWORD}
+  from: ${SMTP_FROM:-noreply@localhost}

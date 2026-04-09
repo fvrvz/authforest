@@ -6,14 +6,21 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DB_USER: test # <-- change this
       DB_PASSWORD: test # <-- change this
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: auth-service-go
+      DB_SSLMODE: disable
+      DB_CHANNEL_BINDING: disable
       JWT_SECRET: "any-random-value-1234" # <-- change this
+      OIDC_ISSUER: "http://localhost:8080" # <-- change this to your domain
+      RSA_KEY_PATH: /data/rsa_private.pem
+    volumes:
+      - app_data:/data
 
   db:
     image: postgres:17-alpine
@@ -25,6 +32,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d auth-service-go"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data:
+  app_data:

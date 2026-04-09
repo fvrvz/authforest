@@ -19,4 +19,5 @@ type User struct {
 	FirstName string    `gorm:"column:first_name"`
 	LastName  string    `gorm:"column:last_name"`
 	DOB       time.Time `gorm:"column:dob"`
+	Roles     []Role    `gorm:"many2many:user_roles;"`
 }
