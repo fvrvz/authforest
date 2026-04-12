@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import MultiInput from '$lib/components/common/multi-input/MultiInput.svelte';
 	import { OIDC } from '$lib/resources/oidc';
 	import { registerClientSchema } from '$lib/schemas/oidc.schema';
 	import { toastService } from '$lib/services/toast.service.svelte';
@@ -16,7 +17,7 @@
 			{
 				client_name: '',
 				client_type: 'public' as const,
-				redirect_uris: '',
+				redirect_uris: [''],
 				scopes: 'openid profile email',
 				grant_types: 'authorization_code',
 			},
@@ -108,7 +109,7 @@
 					onclick={() => {
 						createdClient = null;
 						$form.client_name = '';
-						$form.redirect_uris = '';
+						($form.redirect_uris as string[]) = [''];
 					}}
 				>
 					Register Another
@@ -157,14 +158,11 @@
 
 			<div class="space-y-2">
 				<Label for="redirect_uris">Redirect URIs</Label>
-				<Input
-					type="text"
-					bind:value={$form.redirect_uris}
+				<MultiInput
+					bind:values={$form.redirect_uris}
 					id="redirect_uris"
 					placeholder="http://localhost:4200/callback"
-					required
 				/>
-				<Helper>Comma-separated list of allowed callback URLs.</Helper>
 				{#if $errors.redirect_uris}
 					<Helper color="red">{$errors.redirect_uris}</Helper>
 				{/if}

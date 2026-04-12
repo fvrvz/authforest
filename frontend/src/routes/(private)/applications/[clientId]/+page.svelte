@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import MultiInput from '$lib/components/common/multi-input/MultiInput.svelte';
 	import { OIDC } from '$lib/resources/oidc';
 	import { updateClientSchema } from '$lib/schemas/oidc.schema';
 	import { toastService } from '$lib/services/toast.service.svelte';
@@ -47,7 +48,9 @@
 			return;
 		}
 		$form.client_name = client.client_name ?? '';
-		$form.redirect_uris = client.redirect_uris?.join(', ') ?? '';
+		$form.redirect_uris = client.redirect_uris?.length
+			? [...client.redirect_uris]
+			: [''];
 		$form.scopes = client.scopes ?? '';
 		$form.grant_types = client.grant_types ?? '';
 		$form.access_token_expiry_minutes =
@@ -89,13 +92,11 @@
 
 			<div class="space-y-2">
 				<Label for="redirect_uris">Redirect URIs</Label>
-				<Input
-					type="text"
-					bind:value={$form.redirect_uris}
+				<MultiInput
+					bind:values={$form.redirect_uris as string[]}
 					id="redirect_uris"
 					placeholder="http://localhost:4200/callback"
 				/>
-				<Helper>Comma-separated list of allowed callback URLs.</Helper>
 			</div>
 
 			<div class="space-y-2">
