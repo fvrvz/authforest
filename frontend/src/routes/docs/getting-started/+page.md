@@ -23,19 +23,44 @@ AuthForest is a self-hosted **OpenID Connect (OIDC) Identity Provider** built wi
 
 ## 1. Deploy with Docker
 
-See the [Docker Setup](/docs/docker-setup) guide for a complete `docker-compose.yml`.
+See the [Docker Setup](/docs/docker-setup) guide for the full walkthrough.
 
 Quick version:
 
 ```bash
-docker compose up -d
+git clone https://github.com/fvrvz/authforest.git
+cd authforest
 ```
 
-This starts the AuthForest server at `http://localhost:8080` and a PostgreSQL database.
+**Full stack** (backend + frontend + database):
+
+```bash
+docker compose up --build
+```
+
+**Database only** (recommended for development):
+
+```bash
+docker compose up db
+```
+
+Then run the backend and frontend locally:
+
+```bash
+# Terminal 1 — Backend
+cd backend
+go run .
+
+# Terminal 2 — Frontend
+cd frontend
+pnpm dev
+```
+
+Backend will be available at `http://localhost:8080` and the frontend at `http://localhost:5173`.
 
 ## 2. Access the Admin Panel
 
-Navigate to `http://localhost:8080` and sign in with the credentials you configured via `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables.
+Navigate to `http://localhost:5173` and sign in with the credentials you configured.
 
 From the dashboard you can:
 

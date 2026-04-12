@@ -1,400 +1,198 @@
-# AuthForest Monorepo
+<p align="center">
+  <img src="frontend/static/favicon.svg" width="64" height="64" alt="AuthForest" />
+</p>
 
-A comprehensive authentication and identity platform built as a monorepo, combining a robust Go backend service with OpenID Connect (OIDC) support and a modern Svelte frontend.
+<h1 align="center">AuthForest</h1>
 
-## 📁 Monorepo Structure
+<p align="center">
+  A comprehensive authentication and identity platform — Go backend with OpenID Connect support + modern SvelteKit frontend, managed as a pnpm monorepo.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white" alt="Go" />
+  <img src="https://img.shields.io/badge/SvelteKit-2.x-FF3E00?logo=svelte&logoColor=white" alt="SvelteKit" />
+  <img src="https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+</p>
+
+---
+
+## Project Structure
 
 ```
 authforest/
-├── backend/                # Go authentication service
-│   ├── config/            # Configuration management
-│   ├── controllers/       # HTTP route handlers
-│   ├── services/          # Business logic (OIDC, auth, users)
-│   ├── models/            # Database models
-│   ├── helpers/           # Utility functions (JWT, RSA, etc.)
-│   ├── middlewares/       # HTTP middlewares
-│   ├── dto/               # Data Transfer Objects
-│   ├── db/                # Database setup
-│   ├── main.go            # Entry point
-│   ├── go.mod            # Go module definition
-│   ├── Dockerfile        # Container image
-│   └── docker-compose.yml # Local development setup
+├── backend/                 # Go authentication service
+│   ├── config/              # Configuration management
+│   ├── controllers/         # HTTP route handlers
+│   ├── services/            # Business logic (OIDC, auth, users)
+│   ├── models/              # Database models (GORM)
+│   ├── helpers/             # Utilities (JWT, RSA, OIDC)
+│   ├── middlewares/         # HTTP middlewares
+│   ├── dto/                 # Data Transfer Objects
+│   ├── db/                  # Database setup & seeding
+│   ├── templates/           # HTML templates (OIDC login flow)
+│   ├── Dockerfile           # Multi-stage production image
+│   └── main.go              # Entry point
 │
-├── frontend/              # Svelte Identity Provider UI
-│   ├── src/              # Svelte components and pages
-│   ├── static/           # Static assets
-│   ├── package.json      # Frontend dependencies
-│   ├── svelte.config.js  # SvelteKit config
-│   ├── tsconfig.json     # TypeScript config
-│   └── vite.config.ts    # Vite build config
+├── frontend/                # SvelteKit Identity Provider UI
+│   ├── src/                 # Components, routes, state, services
+│   ├── static/              # Static assets
+│   ├── Dockerfile           # Multi-stage (build → nginx)
+│   └── svelte.config.js     # SvelteKit config
 │
-├── package.json          # Monorepo root config
-├── pnpm-workspace.yaml   # pnpm workspace config
-└── README.md             # This file
+├── docker-compose.yml       # Full-stack orchestration
+├── go.work                  # Go workspace (gopls support)
+├── package.json             # Monorepo root config
+├── pnpm-workspace.yaml      # pnpm workspace definition
+└── .github/workflows/       # CI/CD pipelines
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- **Backend**: Go 1.24+ (optional, use Docker)
-- **Frontend**: Node.js 18+, pnpm
-- **Docker**: For containerized backend (recommended)
+- [Go 1.24+](https://go.dev/dl/) (for backend)
+- [Node.js 20+](https://nodejs.org/) & [pnpm](https://pnpm.io/) (for frontend)
+- [Docker](https://www.docker.com/) (for database / full-stack)
 
-### Development Setup
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/fvrvz/authforest.git
-   cd authforest
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pnpm install
-   ```
-
-3. **Set up backend**
-
-   ```bash
-   cd backend
-   docker-compose up -d
-   # Or run manually: go run .
-   ```
-
-4. **Start frontend development server**
-   ```bash
-   cd frontend
-   pnpm dev
-   ```
-
-Frontend will be available at `http://localhost:5173`  
-Backend API at `http://localhost:8080`
-
-## 📚 package Documentation
-
-### Backend
-
-See [backend/README.md](./backend/README.md) for detailed backend documentation including:
-
-- API endpoints
-- OIDC/OAuth2 configuration
-- Installation and deployment
-- Environment variables
-- Security features
-
-### Frontend
-
-See [frontend/README.md](./frontend/README.md) for frontend documentation including:
-
-- Component structure
-- Build and deployment
-- Development guidelines
-- Testing
-
-## 🔑 Key Features
-
-### Backend (Go)
-
-- OpenID Connect Identity Provider (OIDC IDP)
-- OAuth 2.0 with PKCE support
-- RS256 token signing
-- User management
-- PostgreSQL integration
-- Docker ready
-
-### Frontend (Svelte)
-
-- Identity Provider UI
-- User authentication flows
-- Account management
-- Modern responsive design
-- TypeScript support
-- Vitest unit testing
-
-## 📦 Scripts
-
-Run from monorepo root using pnpm:
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/fvrvz/authforest.git
+cd authforest
+pnpm install
+```
+
+### 2. Set Up Environment
+
+```bash
+# Backend
+cp backend/.env-example backend/.env
+# Edit backend/.env with your DB credentials and secrets
+
 # Frontend
-pnpm --filter @authforest/frontend dev      # Start dev server
-pnpm --filter @authforest/frontend build    # Build for production
-pnpm --filter @authforest/frontend test     # Run tests
-
-# Backend (from backend/ directory)
-cd backend && go run .                       # Run locally
-cd backend && docker-compose up              # Run with Docker
+cp frontend/.env-example frontend/.env
+# Edit frontend/.env with your API URL
 ```
 
-## 🛠 Technology Stack
+### 3. Start Development
 
-### Backend
+#### Option A: Docker for everything
 
-- **Language**: Go 1.24+
-- **Framework**: Gin
-- **Database**: PostgreSQL
-- **ORM**: GORM
-- **Auth**: OpenID Connect, JWT (RS256/HS256)
+```bash
+docker compose up --build
+```
+
+This starts all three services — backend (`:8080`), frontend (`:5173`), and PostgreSQL.
+
+#### Option B: Docker for DB only (recommended for development)
+
+```bash
+# Start only the database
+docker compose up db
+
+# In another terminal — run the backend with hot reload
+cd backend
+go run .
+
+# In another terminal — run the frontend dev server
+cd frontend
+pnpm dev
+```
+
+#### Option C: Pick what you need
+
+```bash
+docker compose up db backend    # DB + Backend (run frontend locally)
+docker compose up db             # DB only (run both services locally)
+```
+
+### 4. Verify
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8080
+- **OIDC Discovery**: http://localhost:8080/.well-known/openid-configuration
+
+## Tech Stack
+
+| Layer        | Technology                                                    |
+| ------------ | ------------------------------------------------------------- |
+| **Backend**  | Go 1.24+, Gin, GORM, PostgreSQL                               |
+| **Frontend** | SvelteKit 2.x, Svelte 5, TypeScript, Tailwind CSS 4, Flowbite |
+| **Auth**     | OIDC Core 1.0, OAuth 2.0 + PKCE, RS256/HS256 JWT              |
+| **Infra**    | Docker, Docker Compose, GitHub Actions, GitHub Pages          |
+
+## Features
+
+### OIDC / OAuth 2.0
+
+- Full OpenID Connect Core 1.0 compliant Identity Provider
+- Authorization Code Flow + PKCE (S256)
+- RS256 token signing with auto-generated RSA keys
+- OIDC Discovery (`/.well-known/openid-configuration`)
+- JWKS endpoint (`/.well-known/jwks.json`)
+- Scope-aware UserInfo endpoint (profile, email)
+- Dynamic OAuth client registration
+- Refresh token rotation with reuse detection
+
+### Security
+
+- bcrypt password hashing
+- Single-use authorization codes
+- Strict redirect URI validation (RFC 6749 §3.1.2)
+- `Cache-Control: no-store` on token responses
+- Configurable CORS
 
 ### Frontend
 
-- **Framework**: SvelteKit 2.x
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Flowbite Svelte
-- **Testing**: Vitest
+- Modern identity provider UI
+- Dark/light theme support
+- Responsive design
+- Authentication flows (login, register)
+- User & role management dashboard
+- OIDC client management
 
-## 🔐 Security
+## API Endpoints
 
-## 🚀 Features
+### OIDC / OAuth 2.0
 
-- **OIDC Identity Provider**: Full OpenID Connect Core 1.0 compliant IDP
-- **Authorization Code Flow + PKCE**: Secure OAuth 2.0 flow with S256 code challenge (RFC 7636)
-- **RS256 Token Signing**: ID tokens and OIDC access tokens signed with RSA-SHA256
-- **OIDC Discovery**: Auto-discoverable configuration at `/.well-known/openid-configuration`
-- **JWKS Endpoint**: Public key endpoint for token verification at `/.well-known/jwks.json`
-- **UserInfo Endpoint**: Scope-aware claims (profile, email) per OIDC Core §5.4
-- **Dynamic Client Registration**: Register OAuth clients via API
-- **Refresh Token Rotation**: Secure refresh token reuse detection
-- **JWT Authentication**: Legacy HS256 token-based auth for internal API routes
-- **User Management**: User registration, login, logout, and profile management
-- **Database Integration**: PostgreSQL with GORM ORM
-- **CORS Support**: Configurable Cross-Origin Resource Sharing
-- **Docker Support**: Containerized deployment with Docker and Docker Compose
+| Endpoint                            | Method   | Description             |
+| ----------------------------------- | -------- | ----------------------- |
+| `/.well-known/openid-configuration` | GET      | OIDC Discovery document |
+| `/.well-known/jwks.json`            | GET      | JSON Web Key Set        |
+| `/oauth2/authorize`                 | GET/POST | Authorization endpoint  |
+| `/oauth2/token`                     | POST     | Token exchange          |
+| `/oauth2/userinfo`                  | GET/POST | UserInfo claims         |
 
-## 🛠 Tech Stack
+### Auth (Legacy JWT)
 
-- **Language**: Go 1.24+
-- **Web Framework**: Gin
-- **Database**: PostgreSQL
-- **ORM**: GORM
-- **OIDC/OAuth2**: OpenID Connect Core 1.0, RFC 7636 (PKCE)
-- **Token Signing**: RS256 (OIDC) + HS256 (legacy JWT) via golang-jwt/jwt/v5
-- **Containerization**: Docker & Docker Compose
-- **Logger**: Custom logger (gologger)
+| Endpoint               | Method | Auth | Description       |
+| ---------------------- | ------ | ---- | ----------------- |
+| `/api/v1/auth/login`   | POST   | No   | Login (HS256 JWT) |
+| `/api/v1/auth/logout`  | GET    | Yes  | Logout            |
+| `/api/v1/auth/refresh` | POST   | Yes  | Refresh token     |
 
-## 📁 Project Structure
+### User Management
 
-```
-authforest/
-├── config/                 # Configuration management
-│   ├── config.go
-│   └── files/
-│       └── config.yml
-├── constants/              # Application constants
-├── controllers/            # HTTP request handlers
-│   ├── auth.controller.go
-│   ├── users.controller.go
-│   └── oauth.controller.go  # OIDC route definitions
-├── db/                     # Database connection and setup
-├── dto/                    # Data Transfer Objects
-│   ├── auth.dto.go
-│   ├── common.dto.go
-│   ├── config.dto.go
-│   ├── user.dto.go
-│   └── oauth.dto.go         # OIDC request/response DTOs
-├── helpers/                # Utility functions
-│   ├── jwt.go               # Legacy HS256 JWT helpers
-│   ├── oidc_jwt.go          # RS256 OIDC token generation
-│   ├── rsa.go               # RSA key management
-│   └── normalize-date.go
-├── middlewares/            # HTTP middlewares
-├── models/                 # Database models
-│   ├── auth.go
-│   ├── user.go
-│   └── oauth.go             # OAuthClient, AuthorizationCode
-├── services/               # Business logic layer
-│   ├── auth.service.go
-│   ├── users.service.go
-│   ├── oidc_discovery.go    # Discovery + JWKS
-│   ├── oidc_authorize.go    # Authorization endpoint + login
-│   ├── oidc_token.go        # Token exchange (auth code + refresh)
-│   ├── oidc_userinfo.go     # UserInfo endpoint
-│   ├── oidc_client.go       # Client registration
-│   └── oidc_helpers.go      # PKCE, redirect helpers
-├── server/                 # Server setup and routing
-├── templates/              # HTML templates for OIDC login flow
-│   ├── login.html
-│   └── error.html
-├── postman-collections/    # API testing collections
-├── docker-compose.yml
-├── Dockerfile
-└── main.go                 # Application entry point
-```
+| Endpoint                 | Method | Auth | Description |
+| ------------------------ | ------ | ---- | ----------- |
+| `/api/v1/users/register` | POST   | No   | Register    |
+| `/api/v1/users`          | GET    | Yes  | List users  |
+| `/api/v1/users/:userId`  | GET    | Yes  | Get user    |
+| `/api/v1/users/:userId`  | PATCH  | Yes  | Update user |
+| `/api/v1/users/:userId`  | DELETE | Yes  | Delete user |
 
-## 🐳 Docker Setup (Recommended)
+### OAuth Client Management
 
-The easiest way to run the application is using Docker Compose, which sets up both the auth service and PostgreSQL database.
+| Endpoint                  | Method | Auth | Description           |
+| ------------------------- | ------ | ---- | --------------------- |
+| `/api/v1/oauth2/register` | POST   | Yes  | Register OAuth client |
 
-### Prerequisites
+## OIDC Integration
 
-- Docker
-- Docker Compose
-
-### Quick Start
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/fvrvz/authforest.git
-   cd authforest
-   ```
-
-2. **Configure environment variables**
-
-   Edit the `docker-compose.yml` file and update the following values:
-
-   ```yaml
-   environment:
-     DB_USER: your_db_user # Change from 'test'
-     DB_PASSWORD: your_db_password # Change from 'test'
-     JWT_SECRET: "your-secret-key" # Change to a secure random string
-     OIDC_ISSUER: "http://localhost:8080" # Your externally reachable base URL
-   ```
-
-3. **Start the services**
-
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Verify the service is running**
-   ```bash
-   curl http://localhost:8080/health
-   ```
-
-The application will be available at `http://localhost:8080` and PostgreSQL at `localhost:5432`.
-
-### Docker Compose Services
-
-- **auth-service**: The main Go application (port 8080)
-- **db**: PostgreSQL database (port 5432)
-- **postgres_data**: Persistent volume for database data
-
-## 🔧 Manual Setup
-
-If you prefer to run the application without Docker:
-
-### Prerequisites
-
-- Go 1.24 or higher
-- PostgreSQL 12+
-- Git
-
-### Installation Steps
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/fvrvz/authforest.git
-   cd authforest
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   go mod download
-   ```
-
-3. **Set up PostgreSQL database**
-
-   Create a database named `authforest` or update the configuration accordingly.
-
-4. **Configure environment variables**
-
-   Create a `.env` file in the root directory:
-
-   ```env
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   DB_NAME=authforest
-   DB_SSLMODE=disable
-   DB_CHANNEL_BINDING=disable
-   JWT_SECRET=your-jwt-secret-key
-   OIDC_ISSUER=http://localhost:8080
-   ```
-
-   > **Note:** An RSA private key (`rsa_private.pem`) is auto-generated on first startup if it doesn't exist. To use your own key, place it at the path specified in `config.yml` under `oidc.rsa_key_path`.
-
-5. **Update configuration (optional)**
-
-   Modify `config/files/config.yml` if needed for custom settings like CORS origins or JWT expiry times.
-
-6. **Build and run the application**
-
-   ```bash
-   # Build the binary
-   go build -o authforest .
-
-   # Run the compiled binary
-   ./authforest
-
-   # Build a Windows executable
-   go build -o authforest.exe
-
-   # Or, for development, run directly
-   go run .
-   ```
-
-The application will start on port 8080 (configurable in `config.yml`).
-
-## 📚 API Endpoints
-
-### OIDC / OAuth 2.0 Endpoints
-
-| Endpoint                            | Method   | Description                                                    |
-| ----------------------------------- | -------- | -------------------------------------------------------------- |
-| `/.well-known/openid-configuration` | GET      | OIDC Discovery document                                        |
-| `/.well-known/jwks.json`            | GET      | JSON Web Key Set (public signing keys)                         |
-| `/oauth2/authorize`                 | GET      | Authorization endpoint (renders login page)                    |
-| `/oauth2/authorize`                 | POST     | Login form submission (issues authorization code)              |
-| `/oauth2/token`                     | POST     | Token endpoint (exchanges code/refresh token for tokens)       |
-| `/oauth2/userinfo`                  | GET/POST | UserInfo endpoint (returns claims based on access token scope) |
-
-### Auth Endpoints (Legacy JWT)
-
-| Endpoint               | Method | Auth | Description            |
-| ---------------------- | ------ | ---- | ---------------------- |
-| `/api/v1/auth/login`   | POST   | No   | User login (HS256 JWT) |
-| `/api/v1/auth/logout`  | GET    | Yes  | User logout            |
-| `/api/v1/auth/refresh` | POST   | Yes  | Refresh JWT token      |
-
-### User Management Endpoints
-
-| Endpoint                 | Method | Auth | Description       |
-| ------------------------ | ------ | ---- | ----------------- |
-| `/api/v1/users/register` | POST   | No   | User registration |
-| `/api/v1/users`          | GET    | Yes  | Get all users     |
-| `/api/v1/users/:userId`  | GET    | Yes  | Get specific user |
-| `/api/v1/users/:userId`  | PATCH  | Yes  | Update user       |
-| `/api/v1/users/:userId`  | DELETE | Yes  | Delete user       |
-
-### Protected OIDC Management Endpoints
-
-| Endpoint                  | Method | Auth | Description                 |
-| ------------------------- | ------ | ---- | --------------------------- |
-| `/api/v1/oauth2/register` | POST   | Yes  | Register a new OAuth client |
-
-### API Testing
-
-Import the Postman collection from `postman-collections/AuthForest.postman_collection.json` for easy API testing.
-
-## 🔑 OIDC Integration Guide
-
-### 1. Register an OAuth Client
+### Register a Client
 
 ```bash
-# First, obtain a JWT token via the legacy login endpoint
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "admin", "password": "password"}' | jq -r '.token')
-
-# Register a public client (SPA)
 curl -X POST http://localhost:8080/api/v1/oauth2/register \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -407,77 +205,7 @@ curl -X POST http://localhost:8080/api/v1/oauth2/register \
   }'
 ```
 
-Response:
-
-```json
-{
-  "client_id": "generated-uuid",
-  "client_name": "My SPA",
-  "client_type": "public",
-  "redirect_uris": ["http://localhost:4200/callback"],
-  "scopes": "openid profile email offline_access",
-  "grant_types": "authorization_code"
-}
-```
-
-### 2. Authorization Code Flow with PKCE
-
-**Step 1:** Redirect user to the authorization endpoint:
-
-```
-GET /oauth2/authorize?
-  response_type=code&
-  client_id=YOUR_CLIENT_ID&
-  redirect_uri=http://localhost:4200/callback&
-  scope=openid profile email&
-  state=random_state_value&
-  nonce=random_nonce_value&
-  code_challenge=BASE64URL_SHA256_OF_VERIFIER&
-  code_challenge_method=S256
-```
-
-The user sees a login page, authenticates, and is redirected back with an authorization code.
-
-**Step 2:** Exchange the code for tokens:
-
-```bash
-curl -X POST http://localhost:8080/oauth2/token \
-  -d "grant_type=authorization_code" \
-  -d "code=AUTHORIZATION_CODE" \
-  -d "redirect_uri=http://localhost:4200/callback" \
-  -d "client_id=YOUR_CLIENT_ID" \
-  -d "code_verifier=YOUR_ORIGINAL_CODE_VERIFIER"
-```
-
-Response:
-
-```json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
-  "token_type": "Bearer",
-  "expires_in": 900,
-  "id_token": "eyJhbGciOiJSUzI1NiIs...",
-  "refresh_token": "eyJhbGciOiJSUzI1NiIs...",
-  "scope": "openid profile email"
-}
-```
-
-### 3. Using with Client Libraries
-
-#### angular-oauth2-oidc
-
-```typescript
-export const authConfig: AuthConfig = {
-  issuer: "http://localhost:8080",
-  clientId: "YOUR_CLIENT_ID",
-  redirectUri: window.location.origin + "/callback",
-  responseType: "code",
-  scope: "openid profile email",
-  useSilentRefresh: true,
-};
-```
-
-#### oidc-client-ts / React
+### Client Library Example (oidc-client-ts)
 
 ```typescript
 const config: UserManagerSettings = {
@@ -489,27 +217,24 @@ const config: UserManagerSettings = {
 };
 ```
 
-The client library will auto-discover all endpoints via `/.well-known/openid-configuration`.
-
 ### Supported Scopes
 
-| Scope            | Claims Returned                                                         |
+| Scope            | Claims                                                                  |
 | ---------------- | ----------------------------------------------------------------------- |
 | `openid`         | `sub`, `iss`, `aud`, `exp`, `iat`, `auth_time`, `nonce`                 |
 | `profile`        | `name`, `given_name`, `family_name`, `preferred_username`, `updated_at` |
 | `email`          | `email`, `email_verified`                                               |
 | `offline_access` | Issues a refresh token                                                  |
 
-## ⚙️ Configuration
+## Configuration
 
-The application uses a YAML configuration file (`config/files/config.yml`) with environment variable substitution:
+The backend uses `config/files/config.yml` with environment variable substitution:
 
 ```yaml
 server:
   port: 8080
   cors:
     allowOrigins: ["http://localhost:5173"]
-    allowCredentials: true
 
 database:
   host: ${DB_HOST}
@@ -521,73 +246,69 @@ database:
 jwt:
   expiry_minutes: 15
   jwt_secret: ${JWT_SECRET}
-  refresh_token_expiry_hours: 2
 
 oidc:
-  issuer: ${OIDC_ISSUER} # Base URL of the IDP (e.g. http://localhost:8080)
-  rsa_key_path: rsa_private.pem # Path to RSA private key (auto-generated if missing)
+  issuer: ${OIDC_ISSUER}
+  rsa_key_path: rsa_private.pem # auto-generated if missing
 ```
 
-## 🔐 Security Features
+### Environment Variables
 
-- **RS256 Token Signing**: OIDC tokens signed with RSA-SHA256 (2048-bit key, auto-generated)
-- **PKCE (S256)**: Proof Key for Code Exchange prevents authorization code interception attacks
-- **Authorization Code Replay Detection**: Codes are single-use, marked as used on exchange
-- **Refresh Token Rotation**: Old refresh tokens are revoked when a new one is issued
-- **Scope-Gated Claims**: UserInfo and ID token claims filtered by granted scopes
-- **Redirect URI Validation**: Strict exact-match comparison per RFC 6749 §3.1.2
-- **Cache-Control: no-store**: All token endpoint responses prevent caching (OIDC Core §3.1.3.3)
-- **Password Hashing**: bcrypt-based secure password storage
-- **CORS Protection**: Configurable cross-origin request handling
-- **Input Validation**: Request validation using Gin's built-in validators
+| Variable              | Description                | Default      | Required |
+| --------------------- | -------------------------- | ------------ | -------- |
+| `DB_HOST`             | Database host              | `localhost`  | Yes      |
+| `DB_PORT`             | Database port              | `5432`       | Yes      |
+| `DB_USER`             | Database username          | —            | Yes      |
+| `DB_PASSWORD`         | Database password          | —            | Yes      |
+| `DB_NAME`             | Database name              | `authforest` | Yes      |
+| `DB_SSLMODE`          | PostgreSQL SSL mode        | `disable`    | No       |
+| `JWT_SECRET`          | HS256 JWT signing secret   | —            | Yes      |
+| `OIDC_ISSUER`         | OIDC Issuer URL            | —            | Yes      |
+| `VITE_BASE_URL`       | Backend API URL (frontend) | —            | Yes      |
+| `VITE_OIDC_CLIENT_ID` | OIDC client ID (frontend)  | —            | Yes      |
 
-## 🚦 Health Check
-
-The service includes health check endpoints for monitoring:
-
-- Basic health status endpoint
-- Database connectivity verification
-
-## 🧪 Development
-
-### Running Tests
+## Scripts
 
 ```bash
-go test ./...
+# From monorepo root
+pnpm dev              # Start frontend dev server
+pnpm build            # Build frontend for production
+pnpm test             # Run frontend tests
+pnpm lint             # Lint frontend
+
+# Backend (from backend/)
+go run .              # Run locally
+go test ./...         # Run tests
+go build -o authforest .  # Build binary
 ```
 
-### Building for Production
+## CI/CD
 
-```bash
-CGO_ENABLED=0 GOOS=linux go build -o authforest .
-```
+GitHub Actions workflows with monorepo path filters:
 
-## 📝 Environment Variables
+| Workflow           | Trigger               | Purpose                         |
+| ------------------ | --------------------- | ------------------------------- |
+| `backend-ci.yml`   | `backend/**` changes  | Go lint, test, build            |
+| `frontend-ci.yml`  | `frontend/**` changes | Svelte check, lint, test, build |
+| `deploy-pages.yml` | Push to `develop`     | Deploy frontend to GitHub Pages |
+| `docker-build.yml` | Push to `main`        | Build & push Docker images      |
+| `security.yml`     | Weekly + push         | Security scanning               |
+| `release.yml`      | Tag push              | Create GitHub release           |
 
-| Variable             | Description                       | Default    | Required |
-| -------------------- | --------------------------------- | ---------- | -------- |
-| `DB_HOST`            | Database host                     | localhost  | Yes      |
-| `DB_PORT`            | Database port                     | 5432       | Yes      |
-| `DB_USER`            | Database username                 | -          | Yes      |
-| `DB_PASSWORD`        | Database password                 | -          | Yes      |
-| `DB_NAME`            | Database name                     | authforest | Yes      |
-| `DB_SSLMODE`         | PostgreSQL SSL mode               | disable    | No       |
-| `DB_CHANNEL_BINDING` | PostgreSQL channel binding        | disable    | No       |
-| `JWT_SECRET`         | HS256 JWT signing secret (legacy) | -          | Yes      |
-| `OIDC_ISSUER`        | OIDC Issuer URL (your base URL)   | -          | Yes      |
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
 
-## 🆘 Support
+---
 
-If you encounter any issues or have questions, please create an issue in the GitHub repository.
+<p align="center">
+  <img src="frontend/static/fayso-logo.svg" height="20" alt="FaySo" />
+</p>

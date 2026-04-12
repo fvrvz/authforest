@@ -74,8 +74,8 @@ All errors follow a consistent format:
 
 ```json
 {
-	"error": "error_code",
-	"message": "Human-readable error description"
+  "error": "error_code",
+  "message": "Human-readable error description"
 }
 ```
 

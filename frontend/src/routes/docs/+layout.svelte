@@ -3,18 +3,18 @@
 	import { page } from '$app/state';
 	import { DarkMode } from 'flowbite-svelte';
 	import {
-		ArrowLeft,
-		BookOpen,
-		ChevronRight,
-		Database,
-		FileCode2,
-		KeyRound,
-		Menu,
-		Server,
-		Shield,
-		TreePine,
-		Users,
-		X,
+	  ArrowLeft,
+	  BookOpen,
+	  ChevronRight,
+	  Database,
+	  FileCode2,
+	  KeyRound,
+	  Menu,
+	  Server,
+	  Shield,
+	  TreePine,
+	  Users,
+	  X,
 	} from 'lucide-svelte';
 
 	let { children } = $props();
@@ -216,11 +216,10 @@
 					prose-code:rounded prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-normal
 					prose-pre:rounded-xl prose-pre:shadow-sm prose-pre:ring-1 prose-pre:ring-gray-200 dark:prose-pre:shadow-lg dark:prose-pre:ring-gray-700
 					prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline dark:prose-a:text-primary-400
-					prose-table:block prose-table:overflow-x-auto prose-table:rounded-lg prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-700
+					prose-table:w-full prose-table:rounded-lg prose-table:border prose-table:border-gray-200 dark:prose-table:border-gray-700
 					prose-thead:bg-gray-50 dark:prose-thead:bg-gray-800
-					prose-th:px-4 prose-th:py-3 prose-th:text-xs prose-th:font-semibold prose-th:uppercase prose-th:tracking-wider
-					prose-td:px-4 prose-td:py-3
-					prose-tr:border-b prose-tr:border-gray-200 dark:prose-tr:border-gray-700
+					prose-th:px-4 prose-th:py-3 prose-th:text-xs prose-th:font-semibold prose-th:uppercase prose-th:tracking-wider prose-th:border-b prose-th:border-gray-200 dark:prose-th:border-gray-700
+					prose-td:px-4 prose-td:py-3 prose-td:border-b prose-td:border-gray-200 dark:prose-td:border-gray-700
 					prose-img:rounded-xl prose-img:shadow-md
 					prose-blockquote:border-primary-500 prose-blockquote:bg-primary-50/50 prose-blockquote:rounded-r-lg prose-blockquote:py-1 dark:prose-blockquote:bg-primary-950/30"
 			>
@@ -238,3 +237,42 @@
 		</main>
 	</div>
 </div>
+
+<style>
+	article :global(table) {
+		display: block;
+		overflow-x: auto;
+		scrollbar-width: thin;
+		scrollbar-color: #d1d5db transparent;
+	}
+
+	article :global(table)::-webkit-scrollbar {
+		height: 6px;
+	}
+
+	article :global(table)::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	article :global(table)::-webkit-scrollbar-thumb {
+		background-color: #d1d5db;
+		border-radius: 3px;
+	}
+
+	:global(.dark) article :global(table) {
+		scrollbar-color: #4b5563 transparent;
+	}
+
+	:global(.dark) article :global(table)::-webkit-scrollbar-thumb {
+		background-color: #4b5563;
+	}
+
+	@media (min-width: 640px) {
+		article :global(table) {
+			display: table;
+			overflow: hidden;
+			border-collapse: separate;
+			border-spacing: 0;
+		}
+	}
+</style>

@@ -41,11 +41,11 @@ After a successful authorization code exchange, you'll receive:
 
 ```json
 {
-	"access_token": "eyJhbGciOi...",
-	"id_token": "eyJhbGciOi...",
-	"token_type": "Bearer",
-	"expires_in": 3600,
-	"refresh_token": "eyJhbGciOi..."
+  "access_token": "eyJhbGciOi...",
+  "id_token": "eyJhbGciOi...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "eyJhbGciOi..."
 }
 ```
 
