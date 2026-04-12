@@ -52,7 +52,7 @@
 		? 'translate-x-0 sm:w-64'
 		: '-translate-x-full sm:translate-x-0 sm:w-14'}"
 >
-	<nav class="flex flex-col gap-1 pt-4 {open ? 'px-3' : 'sm:px-0'}">
+	<nav class="flex flex-col gap-1 pt-5.5 {open ? 'px-3' : 'sm:px-0'}">
 		<div
 			class="mb-4 flex items-center justify-center gap-2 select-none {open
 				? ''
