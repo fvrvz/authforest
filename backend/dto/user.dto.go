@@ -1,6 +1,9 @@
 package dto
 
-import "github.com/fvrvz/authforest/models"
+import (
+	"github.com/fvrvz/authforest/constants"
+	"github.com/fvrvz/authforest/models"
+)
 
 type UserDTO struct {
 	BaseModel
@@ -71,7 +74,7 @@ func ToUserDTO(user *models.User) *UserDTO {
 		LastName:  user.LastName,
 		Email:     user.Email,
 		Username:  user.Username,
-		DOB:       user.DOB.String(),
+		DOB:       user.DOB.Format(constants.DATE_FORMAT),
 		Roles:     roles,
 		BaseModel: BaseModel{
 			ID:        user.ID,

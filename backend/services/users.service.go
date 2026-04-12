@@ -94,6 +94,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// Assign default "user" role
+	var userRole models.Role
+	if err := db.GetDB().Where("name = ?", "user").First(&userRole).Error; err == nil {
+		db.GetDB().Model(&user).Association("Roles").Append([]models.Role{userRole})
+	}
+
 	c.JSON(http.StatusCreated, dto.SuccessResponse[gin.H]{
 		Message: "User registered successfully",
 		Data: gin.H{
@@ -299,11 +305,16 @@ func AdminCreateUser(ctx *gin.Context) {
 		return
 	}
 
-	// Assign roles if provided
+	// Assign roles if provided, otherwise assign default "user" role
 	if len(req.RoleIDs) > 0 {
 		var roles []models.Role
 		if err := db.GetDB().Where("id IN ?", req.RoleIDs).Find(&roles).Error; err == nil {
 			db.GetDB().Model(&user).Association("Roles").Replace(roles)
+		}
+	} else {
+		var userRole models.Role
+		if err := db.GetDB().Where("name = ?", "user").First(&userRole).Error; err == nil {
+			db.GetDB().Model(&user).Association("Roles").Append([]models.Role{userRole})
 		}
 	}
 
