@@ -19,21 +19,8 @@
   </defs>
 
   <style>
-    .wordmark-light {
-      display: inline;
+    .wordmark {
       fill: #162031;
-    }
-    .wordmark-dark {
-      display: none;
-      fill: #e2e8f0;
-    }
-    @media (prefers-color-scheme: dark) {
-      .wordmark-light {
-        display: none;
-      }
-      .wordmark-dark {
-        display: inline;
-      }
     }
   </style>
 
@@ -47,8 +34,7 @@
 
   <!-- Wordmark: fully new typographic treatment -->
   <g transform="translate(56,0)">
-    <text x="0" y="31" font-family="Segoe UI, Inter, sans-serif" font-size="28" font-weight="800" letter-spacing="0.2" class="wordmark-light" stroke="#ffffff" stroke-opacity="0.25" stroke-width="0.35">FaySo</text>
-    <text x="0" y="31" font-family="Segoe UI, Inter, sans-serif" font-size="28" font-weight="800" letter-spacing="0.2" class="wordmark-dark" stroke="#020617" stroke-opacity="0.35" stroke-width="0.35">FaySo</text>
+    <text x="0" y="31" font-family="Segoe UI, Inter, sans-serif" font-size="28" font-weight="800" letter-spacing="0.2" class="wordmark" stroke="#ffffff" stroke-opacity="0.25" stroke-width="0.35">FaySo</text>
     <rect x="2" y="35" width="62" height="3" rx="2" fill="url(#orbA)" opacity="0.9" />
   </g>
 </svg>

@@ -88,7 +88,7 @@
 			class="flex items-center justify-center gap-1.5 py-4 text-xs text-gray-400 dark:text-gray-500"
 		>
 			Powered by
-			<img src="/fayso-logo.svg" alt="FaySo" class="h-5 dark:brightness-200" />
+			<img src="/fayso-logo.svg" alt="FaySo" class="h-5 dark:invert" />
 		</footer>
 	</div>
 {/if}

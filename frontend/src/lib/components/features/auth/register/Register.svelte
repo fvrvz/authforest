@@ -6,6 +6,7 @@
 	import { toastService } from '$lib/services/toast.service.svelte';
 	import dayjs from 'dayjs';
 	import { A, Button, Datepicker, Input, Label } from 'flowbite-svelte';
+	import { TreePine } from 'lucide-svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
 
@@ -32,11 +33,21 @@
 
 <form
 	use:enhance
-	class="m-auto max-w-lg rounded-lg border border-gray-300 bg-gray-50 p-6 space-y-4"
+	class="m-auto max-w-lg space-y-5 rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-600 dark:bg-gray-800"
 	id={$formId}
 >
-	<h1 class="mb-5 text-4xl dark:text-white">Register</h1>
-	<article class="grid sm:grid-cols-2 items-center gap-4">
+	<div class="flex flex-col items-center gap-2">
+		<TreePine
+			class="size-10 text-primary-600 dark:text-primary-400"
+			strokeWidth={1.8}
+		/>
+		<h1 class="text-2xl font-bold dark:text-white">Create an account</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">
+			Sign up to get started with AuthForest
+		</p>
+	</div>
+
+	<article class="grid items-center gap-4 sm:grid-cols-2">
 		<div class="space-y-2">
 			<Label for="fname">First Name</Label>
 			<Input
@@ -103,18 +114,19 @@
 		</div>
 	</article>
 
-	<div class="flex items-center justify-between gap-2 max-sm:flex-col">
-		<span class="text-gray-600">
+	<Button
+		type="submit"
+		form={$formId}
+		class="w-full cursor-pointer"
+		loading={$submitting}
+	>
+		Create account
+	</Button>
+
+	<div class="text-center">
+		<span class="text-sm text-gray-500 dark:text-gray-400">
 			Already have an account?
-			<A class="text-sm sm:text-base" href={resolve('/login')}>Signin</A>
 		</span>
-		<Button
-			type="submit"
-			form={$formId}
-			class="w-full cursor-pointer sm:w-auto"
-			loading={$submitting}
-		>
-			Create
-		</Button>
+		<A class="text-sm" href={resolve('/login')}>Sign in</A>
 	</div>
 </form>
