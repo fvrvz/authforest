@@ -110,7 +110,7 @@
 
 	function isActive(href: string): boolean {
 		const current = page.url?.pathname ?? '';
-		const resolved = resolve(href);
+		const resolved = resolve(href as any);
 		return current === resolved;
 	}
 </script>
@@ -184,7 +184,7 @@
 								{@const active = isActive(item.href)}
 								<li>
 									<a
-										href={resolve(item.href)}
+										href={resolve(item.href as any)}
 										onclick={() => (mobileOpen = false)}
 										class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors {active
 											? 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-950 dark:text-primary-400'

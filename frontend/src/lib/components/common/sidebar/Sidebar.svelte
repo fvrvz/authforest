@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import type { Pathname } from '$app/types';
 	import {
 	  AppWindow,
 	  LayoutDashboard,
@@ -29,7 +28,7 @@
 
 	function isActive(href: string): boolean {
 		const current = page.url?.pathname ?? '';
-		const resolved = resolve(href as Pathname);
+		const resolved = resolve(href as any);
 		if (href === '/dashboard') return current === resolved;
 		return current.startsWith(resolved);
 	}
@@ -69,7 +68,7 @@
 		{#each navItems as item (item.href)}
 			{@const active = isActive(item.href)}
 			<a
-				href={resolve(item.href as Pathname)}
+				href={resolve(item.href as any)}
 				class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
 					{active
 					? 'bg-primary-600 text-white'

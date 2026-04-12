@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
 	import { OIDC } from '$lib/resources/oidc';
 	import { toastService } from '$lib/services/toast.service.svelte';
 	import { authStore } from '$lib/state/auth.svelte';
@@ -62,7 +61,7 @@
 		<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 			{#each cards as card (card.label)}
 				<a
-					href={resolve(card.href as Pathname)}
+					href={resolve(card.href as any)}
 					class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-600 dark:bg-gray-800"
 				>
 					<div class="rounded-lg {card.color} p-3 text-white">
