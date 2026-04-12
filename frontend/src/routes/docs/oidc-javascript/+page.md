@@ -15,16 +15,16 @@ npm install oidc-client-ts
 ## Configuration
 
 ```typescript
-import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import { UserManager, WebStorageStateStore } from "oidc-client-ts";
 
 const userManager = new UserManager({
-	authority: 'http://localhost:8080',
-	client_id: 'your-client-id',
-	redirect_uri: 'http://localhost:3000/callback',
-	post_logout_redirect_uri: 'http://localhost:3000',
-	scope: 'openid profile email',
-	response_type: 'code',
-	userStore: new WebStorageStateStore({ store: window.localStorage }),
+  authority: "http://localhost:8080",
+  client_id: "your-client-id",
+  redirect_uri: "http://localhost:3000/callback",
+  post_logout_redirect_uri: "http://localhost:3000",
+  scope: "openid profile email",
+  response_type: "code",
+  userStore: new WebStorageStateStore({ store: window.localStorage }),
 });
 ```
 
@@ -42,7 +42,7 @@ On your callback page (`/callback`):
 
 ```typescript
 const user = await userManager.signinRedirectCallback();
-console.log('Logged in:', user.profile);
+console.log("Logged in:", user.profile);
 // user.profile contains: sub, email, name, roles
 ```
 
@@ -51,8 +51,8 @@ console.log('Logged in:', user.profile);
 ```typescript
 const user = await userManager.getUser();
 if (user && !user.expired) {
-	console.log('Access token:', user.access_token);
-	console.log('User claims:', user.profile);
+  console.log("Access token:", user.access_token);
+  console.log("User claims:", user.profile);
 }
 ```
 
@@ -69,10 +69,10 @@ Include the access token in your API requests:
 ```typescript
 const user = await userManager.getUser();
 
-const response = await fetch('https://your-api.com/data', {
-	headers: {
-		Authorization: `Bearer ${user.access_token}`,
-	},
+const response = await fetch("https://your-api.com/data", {
+  headers: {
+    Authorization: `Bearer ${user.access_token}`,
+  },
 });
 ```
 
@@ -82,12 +82,12 @@ const response = await fetch('https://your-api.com/data', {
 
 ```typescript
 const userManager = new UserManager({
-	// ...other config
-	automaticSilentRenew: true,
+  // ...other config
+  automaticSilentRenew: true,
 });
 
 userManager.events.addAccessTokenExpired(() => {
-	console.log('Token expired, redirecting to login...');
-	userManager.signinRedirect();
+  console.log("Token expired, redirecting to login...");
+  userManager.signinRedirect();
 });
 ```

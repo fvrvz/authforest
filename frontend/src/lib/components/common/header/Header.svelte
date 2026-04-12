@@ -56,12 +56,14 @@
 				{#if crumb.isLast}
 					<span class="font-medium text-gray-900 dark:text-white">{crumb.label}</span>
 				{:else}
+					<!-- eslint-disable svelte/no-navigation-without-resolve -- breadcrumb hrefs are pre-resolved -->
 					<a
 						href={crumb.href}
 						class="text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
 					>
 						{crumb.label}
 					</a>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
 					<ChevronRight class="size-3.5 text-gray-400 dark:text-gray-500" />
 				{/if}
 			{/each}

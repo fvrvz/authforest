@@ -27,12 +27,12 @@ When a user authenticates via OIDC, their roles appear in the `id_token`:
 
 ```json
 {
-	"sub": "uuid-of-the-user",
-	"email": "john@example.com",
-	"name": "John Doe",
-	"roles": ["admin", "editor"],
-	"iat": 1700000000,
-	"exp": 1700003600
+  "sub": "uuid-of-the-user",
+  "email": "john@example.com",
+  "name": "John Doe",
+  "roles": ["admin", "editor"],
+  "iat": 1700000000,
+  "exp": 1700003600
 }
 ```
 
@@ -40,8 +40,8 @@ You can use this in your application to implement authorization logic:
 
 ```javascript
 const claims = parseIdToken(token);
-if (claims.roles.includes('admin')) {
-	// Allow access to admin features
+if (claims.roles.includes("admin")) {
+  // Allow access to admin features
 }
 ```
 

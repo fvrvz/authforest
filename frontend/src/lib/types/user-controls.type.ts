@@ -1,8 +1,8 @@
-import type { MenuItem } from './common..type';
+import type { MenuItem } from "./common..type";
 
 export type UserControlsProps = {
-	fullName: string;
-	email: string;
-	menuItems: MenuItem[];
-	signoutFn: VoidFunction;
+  fullName: string;
+  email: string;
+  menuItems: MenuItem[];
+  signoutFn: VoidFunction;
 };

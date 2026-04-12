@@ -11,7 +11,7 @@ importers:
   frontend:
     dependencies:
       axios:
-        specifier: ^1.13.4
+        specifier: ^1.15.0
         version: 1.15.0
       oidc-client-ts:
         specifier: ^3.5.0

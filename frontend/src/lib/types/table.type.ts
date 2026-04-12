@@ -1,5 +1,5 @@
 export interface TableHeader<T> {
-	label?: string;
-	key: keyof T;
-	class?: string;
+  label?: string;
+  key: keyof T;
+  class?: string;
 }
