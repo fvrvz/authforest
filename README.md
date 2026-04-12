@@ -1,6 +1,153 @@
-# Auth Service Go
+# AuthForest Monorepo
 
-A robust authentication service and **OpenID Connect Identity Provider (OIDC IDP)** built with Go and the Gin web framework. Provides both traditional JWT-based authentication and a standards-compliant OIDC Authorization Code Flow with PKCE, compatible with any OIDC client library (angular-oauth2-oidc, oidc-client-ts, next-auth, etc.).
+A comprehensive authentication and identity platform built as a monorepo, combining a robust Go backend service with OpenID Connect (OIDC) support and a modern Svelte frontend.
+
+## 📁 Monorepo Structure
+
+```
+authforest/
+├── backend/                # Go authentication service
+│   ├── config/            # Configuration management
+│   ├── controllers/       # HTTP route handlers
+│   ├── services/          # Business logic (OIDC, auth, users)
+│   ├── models/            # Database models
+│   ├── helpers/           # Utility functions (JWT, RSA, etc.)
+│   ├── middlewares/       # HTTP middlewares
+│   ├── dto/               # Data Transfer Objects
+│   ├── db/                # Database setup
+│   ├── main.go            # Entry point
+│   ├── go.mod            # Go module definition
+│   ├── Dockerfile        # Container image
+│   └── docker-compose.yml # Local development setup
+│
+├── frontend/              # Svelte Identity Provider UI
+│   ├── src/              # Svelte components and pages
+│   ├── static/           # Static assets
+│   ├── package.json      # Frontend dependencies
+│   ├── svelte.config.js  # SvelteKit config
+│   ├── tsconfig.json     # TypeScript config
+│   └── vite.config.ts    # Vite build config
+│
+├── package.json          # Monorepo root config
+├── pnpm-workspace.yaml   # pnpm workspace config
+└── README.md             # This file
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Backend**: Go 1.24+ (optional, use Docker)
+- **Frontend**: Node.js 18+, pnpm
+- **Docker**: For containerized backend (recommended)
+
+### Development Setup
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/fvrvz/authforest.git
+   cd authforest
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   pnpm install
+   ```
+
+3. **Set up backend**
+
+   ```bash
+   cd backend
+   docker-compose up -d
+   # Or run manually: go run .
+   ```
+
+4. **Start frontend development server**
+   ```bash
+   cd frontend
+   pnpm dev
+   ```
+
+Frontend will be available at `http://localhost:5173`  
+Backend API at `http://localhost:8080`
+
+## 📚 package Documentation
+
+### Backend
+
+See [backend/README.md](./backend/README.md) for detailed backend documentation including:
+
+- API endpoints
+- OIDC/OAuth2 configuration
+- Installation and deployment
+- Environment variables
+- Security features
+
+### Frontend
+
+See [frontend/README.md](./frontend/README.md) for frontend documentation including:
+
+- Component structure
+- Build and deployment
+- Development guidelines
+- Testing
+
+## 🔑 Key Features
+
+### Backend (Go)
+
+- OpenID Connect Identity Provider (OIDC IDP)
+- OAuth 2.0 with PKCE support
+- RS256 token signing
+- User management
+- PostgreSQL integration
+- Docker ready
+
+### Frontend (Svelte)
+
+- Identity Provider UI
+- User authentication flows
+- Account management
+- Modern responsive design
+- TypeScript support
+- Vitest unit testing
+
+## 📦 Scripts
+
+Run from monorepo root using pnpm:
+
+```bash
+# Frontend
+pnpm --filter @authforest/frontend dev      # Start dev server
+pnpm --filter @authforest/frontend build    # Build for production
+pnpm --filter @authforest/frontend test     # Run tests
+
+# Backend (from backend/ directory)
+cd backend && go run .                       # Run locally
+cd backend && docker-compose up              # Run with Docker
+```
+
+## 🛠 Technology Stack
+
+### Backend
+
+- **Language**: Go 1.24+
+- **Framework**: Gin
+- **Database**: PostgreSQL
+- **ORM**: GORM
+- **Auth**: OpenID Connect, JWT (RS256/HS256)
+
+### Frontend
+
+- **Framework**: SvelteKit 2.x
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Flowbite Svelte
+- **Testing**: Vitest
+
+## 🔐 Security
 
 ## 🚀 Features
 
@@ -32,7 +179,7 @@ A robust authentication service and **OpenID Connect Identity Provider (OIDC IDP
 ## 📁 Project Structure
 
 ```
-auth-service-go/
+authforest/
 ├── config/                 # Configuration management
 │   ├── config.go
 │   └── files/
@@ -92,8 +239,8 @@ The easiest way to run the application is using Docker Compose, which sets up bo
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/fvrvz/auth-service-go.git
-   cd auth-service-go
+   git clone https://github.com/fvrvz/authforest.git
+   cd authforest
    ```
 
 2. **Configure environment variables**
@@ -142,8 +289,8 @@ If you prefer to run the application without Docker:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/fvrvz/auth-service-go.git
-   cd auth-service-go
+   git clone https://github.com/fvrvz/authforest.git
+   cd authforest
    ```
 
 2. **Install dependencies**
@@ -154,7 +301,7 @@ If you prefer to run the application without Docker:
 
 3. **Set up PostgreSQL database**
 
-   Create a database named `auth-service-go` or update the configuration accordingly.
+   Create a database named `authforest` or update the configuration accordingly.
 
 4. **Configure environment variables**
 
@@ -165,7 +312,7 @@ If you prefer to run the application without Docker:
    DB_PORT=5432
    DB_USER=your_username
    DB_PASSWORD=your_password
-   DB_NAME=auth-service-go
+   DB_NAME=authforest
    DB_SSLMODE=disable
    DB_CHANNEL_BINDING=disable
    JWT_SECRET=your-jwt-secret-key
@@ -182,13 +329,13 @@ If you prefer to run the application without Docker:
 
    ```bash
    # Build the binary
-   go build -o auth-service-go .
+   go build -o authforest .
 
    # Run the compiled binary
-   ./auth-service-go
+   ./authforest
 
    # Build a Windows executable
-   go build -o auth-service-go.exe
+   go build -o authforest.exe
 
    # Or, for development, run directly
    go run .
@@ -235,7 +382,7 @@ The application will start on port 8080 (configurable in `config.yml`).
 
 ### API Testing
 
-Import the Postman collection from `postman-collections/AuthServiceGo.postman_collection.json` for easy API testing.
+Import the Postman collection from `postman-collections/AuthForest.postman_collection.json` for easy API testing.
 
 ## 🔑 OIDC Integration Guide
 
@@ -412,22 +559,22 @@ go test ./...
 ### Building for Production
 
 ```bash
-CGO_ENABLED=0 GOOS=linux go build -o auth-service-go .
+CGO_ENABLED=0 GOOS=linux go build -o authforest .
 ```
 
 ## 📝 Environment Variables
 
-| Variable             | Description                       | Default         | Required |
-| -------------------- | --------------------------------- | --------------- | -------- |
-| `DB_HOST`            | Database host                     | localhost       | Yes      |
-| `DB_PORT`            | Database port                     | 5432            | Yes      |
-| `DB_USER`            | Database username                 | -               | Yes      |
-| `DB_PASSWORD`        | Database password                 | -               | Yes      |
-| `DB_NAME`            | Database name                     | auth-service-go | Yes      |
-| `DB_SSLMODE`         | PostgreSQL SSL mode               | disable         | No       |
-| `DB_CHANNEL_BINDING` | PostgreSQL channel binding        | disable         | No       |
-| `JWT_SECRET`         | HS256 JWT signing secret (legacy) | -               | Yes      |
-| `OIDC_ISSUER`        | OIDC Issuer URL (your base URL)   | -               | Yes      |
+| Variable             | Description                       | Default    | Required |
+| -------------------- | --------------------------------- | ---------- | -------- |
+| `DB_HOST`            | Database host                     | localhost  | Yes      |
+| `DB_PORT`            | Database port                     | 5432       | Yes      |
+| `DB_USER`            | Database username                 | -          | Yes      |
+| `DB_PASSWORD`        | Database password                 | -          | Yes      |
+| `DB_NAME`            | Database name                     | authforest | Yes      |
+| `DB_SSLMODE`         | PostgreSQL SSL mode               | disable    | No       |
+| `DB_CHANNEL_BINDING` | PostgreSQL channel binding        | disable    | No       |
+| `JWT_SECRET`         | HS256 JWT signing secret (legacy) | -          | Yes      |
+| `OIDC_ISSUER`        | OIDC Issuer URL (your base URL)   | -          | Yes      |
 
 ## 🤝 Contributing
 

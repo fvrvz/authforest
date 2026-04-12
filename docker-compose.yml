@@ -1,7 +1,9 @@
+name: authforest
+
 services:
-  auth-service:
+  backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -13,7 +15,7 @@ services:
       DB_PASSWORD: test # <-- change this
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: auth-service-go
+      DB_NAME: authforest
       DB_SSLMODE: disable
       DB_CHANNEL_BINDING: disable
       JWT_SECRET: "any-random-value-1234" # <-- change this
@@ -22,18 +24,27 @@ services:
     volumes:
       - app_data:/data
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8080
+
   db:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: test # <-- change this
       POSTGRES_PASSWORD: test # <-- change this
-      POSTGRES_DB: auth-service-go
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: authforest
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d auth-service-go"]
+      test: ["CMD-SHELL", "pg_isready -U test -d authforest"]
       interval: 2s
       timeout: 5s
       retries: 10

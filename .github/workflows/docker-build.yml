@@ -1,10 +1,11 @@
-name: Build & Push Docker Image
+name: "Build & Push Docker Image"
 
 on:
   push:
-    branches:
-      - develop
-      - main
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
   release:
     types: [published]
   workflow_dispatch:
@@ -49,7 +50,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           cache-from: type=gha
