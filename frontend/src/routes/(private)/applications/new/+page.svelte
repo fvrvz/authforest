@@ -6,7 +6,8 @@
 	import { registerClientSchema } from '$lib/schemas/oidc.schema';
 	import { toastService } from '$lib/services/toast.service.svelte';
 	import type { OAuthClient } from '$lib/types/oidc.type';
-	import { Button, Helper, Input, Label, Select } from 'flowbite-svelte';
+	import { Button, Dropdown, DropdownItem, Helper, Input, Label } from 'flowbite-svelte';
+	import { ChevronDown } from 'lucide-svelte';
 	import { defaults, superForm } from 'sveltekit-superforms';
 	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
 
@@ -43,9 +44,11 @@
 
 	const { form, tainted, enhance, formId, submitting, errors } = superform;
 
+	let clientTypeOpen = $state(false);
+
 	const clientTypes = [
-		{ value: 'public', name: 'Public (SPA, Mobile App)' },
-		{ value: 'confidential', name: 'Confidential (Server-side App)' },
+		{ value: 'public' as const, name: 'Public (SPA, Mobile App)' },
+		{ value: 'confidential' as const, name: 'Confidential (Server-side App)' },
 	];
 </script>
 
@@ -144,11 +147,31 @@
 
 			<div class="space-y-2">
 				<Label for="client_type">Client Type</Label>
-				<Select
+				<button
+					type="button"
 					id="client_type"
-					items={clientTypes}
-					bind:value={$form.client_type}
-				/>
+					class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-left text-sm text-gray-900 focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+				>
+					{clientTypes.find((t) => t.value === $form.client_type)?.name ?? 'Select type'}
+					<ChevronDown class="size-4 shrink-0 text-gray-500 dark:text-gray-400" />
+				</button>
+				<Dropdown
+					bind:isOpen={clientTypeOpen}
+					simple
+					class="shadow-lg border border-gray-200 dark:border-gray-600"
+				>
+					{#each clientTypes as type (type.value)}
+						<DropdownItem
+							class="text-gray-700 dark:text-gray-200"
+							onclick={() => {
+								$form.client_type = type.value;
+								clientTypeOpen = false;
+							}}
+						>
+							{type.name}
+						</DropdownItem>
+					{/each}
+				</Dropdown>
 				<Helper>
 					{$form.client_type === 'public'
 						? 'For browser-based apps (SPAs) and mobile apps. Uses PKCE for security.'
@@ -239,11 +262,11 @@
 				15 min)</Helper
 			>
 
-			<div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+			<div class="flex flex-col items-center gap-3 pt-2 sm:flex-row">
 				<Button
 					type="submit"
 					form={$formId}
-					class="cursor-pointer"
+					class="w-full cursor-pointer sm:w-auto"
 					loading={$submitting}
 				>
 					Register Application

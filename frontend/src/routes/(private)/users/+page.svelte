@@ -59,10 +59,10 @@
 		</div>
 		<a
 			href={resolve('/users/new')}
-			class="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+			class="flex items-center gap-2 self-end rounded-lg bg-primary-600 p-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 sm:self-auto sm:px-4 sm:py-2"
 		>
 			<Plus class="size-4" />
-			New User
+			<span class="hidden sm:inline">New User</span>
 		</a>
 	</div>
 

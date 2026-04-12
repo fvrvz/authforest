@@ -170,11 +170,11 @@
 				15 min)</Helper
 			>
 
-			<div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+			<div class="flex flex-col items-center gap-3 pt-2 sm:flex-row">
 				<Button
 					type="submit"
 					form={$formId}
-					class="cursor-pointer"
+					class="w-full cursor-pointer sm:w-auto"
 					loading={$submitting}
 				>
 					Save Changes

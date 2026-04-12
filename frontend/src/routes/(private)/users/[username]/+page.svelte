@@ -193,14 +193,14 @@
 			{/if}
 
 			<div
-				class="flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:flex-wrap sm:items-center dark:border-gray-600"
+				class="flex flex-col items-center gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:flex-wrap dark:border-gray-600"
 			>
-				<Button type="submit" class="cursor-pointer" loading={saving}>
+				<Button type="submit" class="w-full cursor-pointer sm:w-auto" loading={saving}>
 					Save Changes
 				</Button>
 				<Button
 					color="alternative"
-					class="flex cursor-pointer items-center gap-2"
+					class="flex w-full cursor-pointer items-center justify-center gap-2 sm:w-auto"
 					loading={resettingPassword}
 					onclick={resetPassword}
 				>

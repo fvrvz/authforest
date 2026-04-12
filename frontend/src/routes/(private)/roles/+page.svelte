@@ -115,9 +115,9 @@
 				Manage roles that can be assigned to users.
 			</p>
 		</div>
-		<Button class="flex cursor-pointer items-center gap-2" onclick={openCreate}>
+		<Button class="flex cursor-pointer items-center gap-2 self-end sm:self-auto" onclick={openCreate}>
 			<Plus class="size-4" />
-			New Role
+			<span class="hidden sm:inline">New Role</span>
 		</Button>
 	</div>
 

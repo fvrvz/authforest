@@ -161,8 +161,8 @@
 			</div>
 		{/if}
 
-		<div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
-			<Button type="submit" class="cursor-pointer" loading={submitting}>
+		<div class="flex flex-col items-center gap-3 pt-2 sm:flex-row">
+			<Button type="submit" class="w-full cursor-pointer sm:w-auto" loading={submitting}>
 				Create User
 			</Button>
 			<a
