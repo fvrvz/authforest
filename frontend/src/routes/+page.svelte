@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
+	import { asset, resolve } from '$app/paths';
 	import { oidcService } from '$lib/services/oidc.service';
 	import { toastService } from '$lib/services/toast.service.svelte';
 	import { authStore } from '$lib/state/auth.svelte';
@@ -88,7 +88,7 @@
 			class="flex items-center justify-center gap-1.5 py-4 text-xs text-gray-400 dark:text-gray-500"
 		>
 			Powered by
-			<img src="/fayso-logo.svg" alt="FaySo" class="h-5 dark:invert" />
+			<img src={asset('/fayso-logo.svg')} alt="FaySo" class="h-5 dark:invert" />
 		</footer>
 	</div>
 {/if}
