@@ -1,14 +1,14 @@
 <script lang="ts" generics="T = Record<string, unknown>">
 	import { type TableHeader } from '$lib/types/table.type';
 	import {
-		Checkbox,
-		Spinner,
-		Table,
-		TableBody,
-		TableBodyCell,
-		TableBodyRow,
-		TableHead,
-		TableHeadCell,
+	  Checkbox,
+	  Spinner,
+	  Table,
+	  TableBody,
+	  TableBodyCell,
+	  TableBodyRow,
+	  TableHead,
+	  TableHeadCell,
 	} from 'flowbite-svelte';
 	import type { Snippet } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -72,9 +72,9 @@
 	}
 </script>
 
-<div class="overflow-x-auto">
+<div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
 	<Table hoverable>
-		<TableHead>
+		<TableHead class="bg-gray-50 dark:bg-gray-700">
 			{#if canSelect}
 				<TableHeadCell>
 					<Checkbox
@@ -121,3 +121,14 @@
 		</TableBody>
 	</Table>
 </div>
+
+<style>
+	div :global(table tbody tr:hover td) {
+		--tw-bg-opacity: 1;
+		background-color: rgb(249 250 251 / var(--tw-bg-opacity));
+	}
+
+	:global(.dark) div :global(table tbody tr:hover td) {
+		background-color: rgb(55 65 81 / 0.5);
+	}
+</style>

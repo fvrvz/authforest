@@ -3,17 +3,20 @@
 	import { page } from '$app/state';
 	import type { Pathname } from '$app/types';
 	import {
-		AppWindow,
-		ChevronRight,
-		LayoutDashboard,
-		Settings,
-		Shield,
-		TreePine,
-		UserCircle,
-		Users,
+	  AppWindow,
+	  LayoutDashboard,
+	  Settings,
+	  Shield,
+	  TreePine,
+	  UserCircle,
+	  Users,
 	} from 'lucide-svelte';
 
-	let isOpen = $state(false);
+	interface Props {
+		open?: boolean;
+	}
+
+	let { open = $bindable(false) }: Props = $props();
 
 	const navItems = [
 		{ label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -32,27 +35,34 @@
 	}
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+
+<!-- Mobile backdrop -->
+<div
+	class="fixed inset-0 z-30 bg-black/50 transition-opacity sm:hidden {open
+		? 'opacity-100'
+		: 'pointer-events-none opacity-0'}"
+	onclick={() => (open = false)}
+></div>
+
+<!-- Sidebar -->
 <aside
-	class="sticky top-0 z-1 h-dvh bg-gray-900 text-gray-50 transition-all max-sm:absolute max-sm:shadow-lg dark:bg-gray-950 dark:text-gray-200 {isOpen
-		? 'w-full sm:w-72'
-		: 'w-0 sm:w-14'}"
+	class="fixed top-0 left-0 z-40 h-dvh w-64 bg-gray-900 text-gray-50 transition-transform sm:sticky sm:z-1 sm:translate-x-0 dark:bg-gray-950 dark:text-gray-200 {open
+		? 'translate-x-0 sm:w-64'
+		: '-translate-x-full sm:translate-x-0 sm:w-14'}"
 >
-	<button
-		type="button"
-		onclick={() => (isOpen = !isOpen)}
-		class="absolute top-5 left-full -translate-x-1/2 cursor-pointer rounded-full bg-white p-1 shadow-md transition-all hover:bg-gray-50 sm:top-10 dark:bg-gray-700"
-	>
-		<ChevronRight class="size-4 text-gray-800 {isOpen && 'rotate-180'}" />
-	</button>
-	<nav class="flex flex-col gap-1 {isOpen ? 'px-3' : 'px-0'}">
+	<nav class="flex flex-col gap-1 pt-4 {open ? 'px-3' : 'sm:px-0'}">
 		<div
-			class="mt-2 mb-4 flex items-center justify-center gap-2 select-none"
+			class="mb-4 flex items-center justify-center gap-2 select-none {open
+				? ''
+				: 'max-sm:hidden'}"
 		>
 			<TreePine
 				class="size-6 shrink-0 text-primary-400"
 				strokeWidth={1.8}
 			/>
-			{#if isOpen}
+			{#if open}
 				<span class="text-xl font-bold tracking-tight">AuthForest</span>
 			{/if}
 		</div>
@@ -63,14 +73,14 @@
 				class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
 					{active
 					? 'bg-primary-600 text-white'
-					: 'text-gray-400 hover:bg-gray-800 hover:text-white dark:text-gray-400 dark:hover:bg-gray-800'}
-					{isOpen ? '' : 'justify-center sm:px-0'}"
+					: 'text-gray-300 hover:bg-gray-800 hover:text-white dark:text-gray-300 dark:hover:bg-gray-800'}
+					{open ? '' : 'max-sm:hidden justify-center sm:px-0'}"
 				onclick={() => {
-					if (window.innerWidth < 640) isOpen = false;
+					if (window.innerWidth < 640) open = false;
 				}}
 			>
 				<item.icon class="size-5 shrink-0" />
-				{#if isOpen}
+				{#if open}
 					<span>{item.label}</span>
 				{/if}
 			</a>

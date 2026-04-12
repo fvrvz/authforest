@@ -242,29 +242,6 @@
 	article :global(table) {
 		display: block;
 		overflow-x: auto;
-		scrollbar-width: thin;
-		scrollbar-color: #d1d5db transparent;
-	}
-
-	article :global(table)::-webkit-scrollbar {
-		height: 6px;
-	}
-
-	article :global(table)::-webkit-scrollbar-track {
-		background: transparent;
-	}
-
-	article :global(table)::-webkit-scrollbar-thumb {
-		background-color: #d1d5db;
-		border-radius: 3px;
-	}
-
-	:global(.dark) article :global(table) {
-		scrollbar-color: #4b5563 transparent;
-	}
-
-	:global(.dark) article :global(table)::-webkit-scrollbar-thumb {
-		background-color: #4b5563;
 	}
 
 	@media (min-width: 640px) {

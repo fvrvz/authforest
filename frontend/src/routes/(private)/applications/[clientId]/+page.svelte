@@ -170,7 +170,7 @@
 				15 min)</Helper
 			>
 
-			<div class="flex items-center gap-3 pt-2">
+			<div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
 				<Button
 					type="submit"
 					form={$formId}

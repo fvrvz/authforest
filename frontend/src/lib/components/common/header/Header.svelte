@@ -3,15 +3,16 @@
 	import { page } from '$app/state';
 	import { authStore } from '$lib/state/auth.svelte';
 	import { DarkMode } from 'flowbite-svelte';
-	import { ChevronRight } from 'lucide-svelte';
+	import { ChevronRight, Menu } from 'lucide-svelte';
 	import type { ClassValue } from 'svelte/elements';
 	import UserControls from '../user-controls/UserControls.svelte';
 
 	interface Props {
 		class?: ClassValue;
+		onToggleSidebar?: () => void;
 	}
 
-	let { class: className }: Props = $props();
+	let { class: className, onToggleSidebar }: Props = $props();
 
 	const labelMap: Record<string, string> = {
 		dashboard: 'Dashboard',
@@ -39,23 +40,34 @@
 	});
 </script>
 
-<header class="flex items-center justify-between px-4 py-2 {className}">
-	<nav class="flex items-center gap-1 text-sm">
-		{#each breadcrumbs as crumb (crumb.href)}
-			{#if crumb.isLast}
-				<span class="font-medium text-gray-900 dark:text-white">{crumb.label}</span>
-			{:else}
-				<a
-					href={crumb.href}
-					class="text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-				>
-					{crumb.label}
-				</a>
-				<ChevronRight class="size-3.5 text-gray-400 dark:text-gray-500" />
-			{/if}
-		{/each}
-	</nav>
-	<section class="ml-auto flex items-center gap-3">
+<header
+	class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800 {className}"
+>
+	<div class="flex items-center gap-3">
+		<button
+			type="button"
+			class="cursor-pointer rounded-lg p-1.5 text-gray-600 transition-colors hover:bg-gray-100 sm:hidden dark:text-gray-300 dark:hover:bg-gray-700"
+			onclick={onToggleSidebar}
+		>
+			<Menu class="size-5" />
+		</button>
+		<nav class="hidden items-center gap-1 text-sm sm:flex">
+			{#each breadcrumbs as crumb (crumb.href)}
+				{#if crumb.isLast}
+					<span class="font-medium text-gray-900 dark:text-white">{crumb.label}</span>
+				{:else}
+					<a
+						href={crumb.href}
+						class="text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+					>
+						{crumb.label}
+					</a>
+					<ChevronRight class="size-3.5 text-gray-400 dark:text-gray-500" />
+				{/if}
+			{/each}
+		</nav>
+	</div>
+	<section class="flex items-center gap-3">
 		<DarkMode class="rounded-full" />
 		{#if authStore.accessToken}
 			<UserControls />

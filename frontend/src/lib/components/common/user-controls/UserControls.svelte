@@ -1,17 +1,10 @@
 <script lang="ts">
 	import { afterNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { type Pathname } from '$app/types';
 	import { oidcService } from '$lib/services/oidc.service';
 	import { authStore } from '$lib/state/auth.svelte';
-	import type { MenuItem } from '$lib/types/common..type';
 	import { onDestroy, onMount } from 'svelte';
 	import Avatar from '../avatar/Avatar.svelte';
-
-	const menuItems: MenuItem[] = [
-		{ label: 'Profile', link: '/profile' },
-		{ label: 'Settings', link: '/settings' },
-	];
 
 	let isOpen = $state(false);
 	let container: HTMLDivElement;
@@ -60,21 +53,6 @@
 				<p>{authStore.user?.fullName}</p>
 				<p class="truncate font-medium">{authStore.user?.email}</p>
 			</section>
-			<ul
-				class="py-2 text-sm text-gray-700 dark:text-gray-200"
-				aria-labelledby="avatarButton"
-			>
-				{#each menuItems as item (item.link)}
-					<li>
-						<a
-							href={resolve(item.link as Pathname)}
-							class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-						>
-							{item.label}
-						</a>
-					</li>
-				{/each}
-			</ul>
 			<section class="py-1">
 				<button
 					type="button"

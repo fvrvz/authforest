@@ -10,13 +10,13 @@
 	import type { User } from '$lib/types/user.type';
 	import dayjs from 'dayjs';
 	import {
-		Badge,
-		Button,
-		Checkbox,
-		Datepicker,
-		Input,
-		Label,
-		Spinner,
+	  Badge,
+	  Button,
+	  Checkbox,
+	  Datepicker,
+	  Input,
+	  Label,
+	  Spinner,
 	} from 'flowbite-svelte';
 	import { KeyRound } from 'lucide-svelte';
 	import { onMount } from 'svelte';
@@ -193,7 +193,7 @@
 			{/if}
 
 			<div
-				class="flex flex-wrap items-center gap-3 border-t border-gray-200 pt-4 dark:border-gray-600"
+				class="flex flex-col gap-3 border-t border-gray-200 pt-4 sm:flex-row sm:flex-wrap sm:items-center dark:border-gray-600"
 			>
 				<Button type="submit" class="cursor-pointer" loading={saving}>
 					Save Changes

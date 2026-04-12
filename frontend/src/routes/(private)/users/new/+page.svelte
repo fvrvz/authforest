@@ -7,13 +7,13 @@
 	import type { Role } from '$lib/types/role.type';
 	import dayjs from 'dayjs';
 	import {
-		Badge,
-		Button,
-		Checkbox,
-		Datepicker,
-		Helper,
-		Input,
-		Label,
+	  Badge,
+	  Button,
+	  Checkbox,
+	  Datepicker,
+	  Helper,
+	  Input,
+	  Label,
 	} from 'flowbite-svelte';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -161,7 +161,7 @@
 			</div>
 		{/if}
 
-		<div class="flex items-center gap-3 pt-2">
+		<div class="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
 			<Button type="submit" class="cursor-pointer" loading={submitting}>
 				Create User
 			</Button>
