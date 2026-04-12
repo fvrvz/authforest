@@ -1,0 +1,34 @@
+{
+    "editor.formatOnSave": true,
+    "[svelte]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": false,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": false,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": false,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[go]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4,
+        "editor.defaultFormatter": "golang.go"
+    },
+    "go.goroot": "",
+    "go.gopath": "",
+    "go.testOnSave": false,
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--config=backend/.golangci.yml"
+    ],
+    "eslint.workingDirectories": [
+        "frontend"
+    ],
+    "typescript.tsdk": "frontend/node_modules/typescript/lib"
+}

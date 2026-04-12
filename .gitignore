@@ -20,8 +20,7 @@ profile.cov
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Go workspace file
-go.work
+# Go workspace sum (go.work is committed for monorepo structure)
 go.work.sum
 
 # env file
@@ -33,3 +32,16 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Node / Frontend
+node_modules/
+.svelte-kit/
+dist/
+build/
+
+# pnpm
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

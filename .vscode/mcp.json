@@ -1,0 +1,9 @@
+{
+    "servers": {
+        "Svelte": {
+            "url": "https://mcp.svelte.dev/mcp",
+            "type": "http"
+        }
+    },
+    "inputs": []
+}

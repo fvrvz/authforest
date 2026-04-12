@@ -1,10 +1,8 @@
-name: Security & Dependencies
+name: "Security & Dependencies"
 
 on:
   pull_request:
-    branches:
-      - develop
-      - main
+    branches: [develop, main]
   workflow_dispatch:
 
 jobs:
@@ -19,15 +17,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner in repo mode
+      - name: Run Trivy vulnerability scanner (backend)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
-          scan-ref: "."
+          scan-ref: "./backend"
           format: "sarif"
-          output: "trivy-fs-results.sarif"
+          output: "trivy-backend-results.sarif"
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Run Trivy vulnerability scanner (frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "./frontend"
+          format: "sarif"
+          output: "trivy-frontend-results.sarif"
+
+      - name: Upload backend Trivy results
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: "trivy-fs-results.sarif"
+          sarif_file: "trivy-backend-results.sarif"
+          category: "backend-security"
+
+      - name: Upload frontend Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-frontend-results.sarif"
+          category: "frontend-security"

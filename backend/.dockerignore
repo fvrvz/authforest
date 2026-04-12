@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+README.md
+LICENSE
+
+# CI/CD
+.github/
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# Tests
+*_test.go
+test/
+coverage.out
+
+# Development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Binaries
+*.exe
+authforest
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Postman
+postman-collections/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

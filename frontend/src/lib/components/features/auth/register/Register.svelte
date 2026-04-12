@@ -1,0 +1,132 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { Users } from '$lib/resources/users';
+	import { userSchema } from '$lib/schemas/user.schema';
+	import { toastService } from '$lib/services/toast.service.svelte';
+	import dayjs from 'dayjs';
+	import { A, Button, Datepicker, Input, Label } from 'flowbite-svelte';
+	import { TreePine } from 'lucide-svelte';
+	import { defaults, superForm } from 'sveltekit-superforms';
+	import { zod4, zod4Client } from 'sveltekit-superforms/adapters';
+
+	const superform = superForm(defaults(zod4(userSchema)), {
+		validators: zod4Client(userSchema),
+		SPA: true,
+		onUpdate: async ({ form }) => {
+			if (!form.valid || !$tainted) return;
+
+			const [err] = await Users.register(form.data);
+
+			if (err) {
+				toastService.error('Registration failed. Please try again.');
+				return;
+			}
+
+			toastService.success('Account created! Please login.');
+			goto(resolve('/login'));
+		},
+	});
+
+	const { form, tainted, enhance, formId, submitting } = superform;
+</script>
+
+<form
+	use:enhance
+	class="m-auto max-w-lg space-y-5 rounded-xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+	id={$formId}
+>
+	<div class="flex flex-col items-center gap-2">
+		<TreePine
+			class="size-10 text-primary-600 dark:text-primary-400"
+			strokeWidth={1.8}
+		/>
+		<h1 class="text-2xl font-bold dark:text-white">Create an account</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">
+			Sign up to get started with AuthForest
+		</p>
+	</div>
+
+	<article class="grid items-center gap-4 sm:grid-cols-2">
+		<div class="space-y-2">
+			<Label for="fname">First Name</Label>
+			<Input
+				type="text"
+				bind:value={$form.firstName}
+				id="fname"
+				placeholder="ex: John"
+				required
+			/>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="lname">Last Name</Label>
+			<Input
+				type="text"
+				bind:value={$form.lastName}
+				id="lname"
+				placeholder="ex: Doe"
+			/>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="email">Email</Label>
+			<Input
+				type="email"
+				bind:value={$form.email}
+				id="email"
+				placeholder="ex: john.doe@example.com"
+				required
+			/>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="dob">Date of Birth</Label>
+			<Datepicker
+				id="dob"
+				required
+				value={$form.DOB ? dayjs($form.DOB).toDate() : undefined}
+				onselect={(date) => ($form.DOB = date.toString())}
+			/>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="username">Username</Label>
+			<Input
+				type="text"
+				bind:value={$form.username}
+				id="username"
+				placeholder="ex: john.doe"
+				required
+			/>
+		</div>
+
+		<div class="space-y-2">
+			<Label for="password">Password</Label>
+			<Input
+				type="password"
+				bind:value={$form.password}
+				id="password"
+				autocomplete="new-password"
+				placeholder="Enter password"
+				required
+			/>
+		</div>
+	</article>
+
+	<Button
+		type="submit"
+		form={$formId}
+		class="w-full cursor-pointer"
+		loading={$submitting}
+	>
+		Create account
+	</Button>
+
+	<div class="text-center">
+		<span class="text-sm text-gray-500 dark:text-gray-400">
+			Already have an account?
+		</span>
+		<A class="text-sm" href={resolve('/login')}>Sign in</A>
+	</div>
+</form>
