@@ -11,13 +11,13 @@ services:
       db:
         condition: service_healthy
     environment:
-      DB_USER: test # <-- change this
-      DB_PASSWORD: test # <-- change this
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: authforest
-      DB_SSLMODE: disable
-      DB_CHANNEL_BINDING: disable
+      DB_NAME: ${DB_NAME:-authforest}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+      DB_CHANNEL_BINDING: ${DB_CHANNEL_BINDING:-disable}
       JWT_SECRET: "any-random-value-1234" # <-- change this
       OIDC_ISSUER: "http://localhost:8080" # <-- change this to your domain
       RSA_KEY_PATH: /data/rsa_private.pem
@@ -37,14 +37,16 @@ services:
 
   db:
     image: postgres:17-alpine
+    ports:
+      - "${DB_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: test # <-- change this
-      POSTGRES_PASSWORD: test # <-- change this
-      POSTGRES_DB: authforest
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-authforest}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test -d authforest"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-authforest}"]
       interval: 2s
       timeout: 5s
       retries: 10
