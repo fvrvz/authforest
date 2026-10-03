@@ -18,6 +18,9 @@ func InitRouter() *gin.Engine {
 
 	setupCors(router)
 
+	// Health check (no auth, no /api/v1 prefix — probed by Docker/orchestrators)
+	controllers.SetupHealthRoutes(router)
+
 	// OIDC/OAuth2 routes (at root level per spec)
 	controllers.SetupOIDCRoutes(router)
 

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 name: authforest
 
 services:
@@ -14,7 +15,7 @@ services:
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_HOST: db
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT:-5432}
       DB_NAME: ${DB_NAME:-authforest}
       DB_SSLMODE: ${DB_SSLMODE:-disable}
       DB_CHANNEL_BINDING: ${DB_CHANNEL_BINDING:-disable}
@@ -23,6 +24,12 @@ services:
       RSA_KEY_PATH: /data/rsa_private.pem
     volumes:
       - app_data:/data
+    healthcheck:
+      test: ["CMD", "/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
 
   frontend:
     build:
@@ -31,7 +38,8 @@ services:
     ports:
       - "5173:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       VITE_API_URL: http://localhost:8080
 
