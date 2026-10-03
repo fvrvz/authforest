@@ -22,6 +22,7 @@ RUN pnpm --filter @authforest/frontend build
 # Stage 2: Serve with nginx
 FROM nginx:alpine
 
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/build /usr/share/nginx/html
 
 EXPOSE 80
