@@ -15,7 +15,8 @@ Dockerfile*
 .dockerignore
 
 # Documentation
-*.md
+README.md
+!src/routes/**/*.md
 
 # Tests
 *.spec.ts

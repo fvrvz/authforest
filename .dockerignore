@@ -18,10 +18,7 @@ frontend/**/.env
 frontend/**/.env.*
 frontend/.github
 frontend/**/.github
-frontend/docs
-frontend/**/docs
-frontend/*.md
-frontend/**/*.md
+frontend/README.md
 frontend/*.spec.ts
 frontend/**/*.spec.ts
 frontend/*.test.ts
