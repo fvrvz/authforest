@@ -11,12 +11,17 @@
 	let checking = $state(true);
 	let loggingIn = $state(false);
 
-	onMount(async () => {
+	onMount(() => {
 		const handlePageShow = () => {
 			loggingIn = false;
 		};
 		window.addEventListener('pageshow', handlePageShow);
+		return () => {
+			window.removeEventListener('pageshow', handlePageShow);
+		};
+	});
 
+	onMount(async () => {
 		const user = await oidcService.getUser();
 		if (user && !user.expired) {
 			authStore.setUser(user);
@@ -24,10 +29,6 @@
 			return;
 		}
 		checking = false;
-
-		return () => {
-			window.removeEventListener('pageshow', handlePageShow);
-		};
 	});
 
 	async function handleLogin() {
