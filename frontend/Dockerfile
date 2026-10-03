@@ -9,6 +9,14 @@ COPY frontend/package.json ./frontend/package.json
 RUN pnpm install --frozen-lockfile --config.ignore-scripts=false
 
 COPY frontend ./frontend
+
+# Build-time variables — Vite bakes these into the static bundle.
+# Pass them via docker-compose build.args or --build-arg.
+ARG VITE_BASE_URL
+ARG VITE_OIDC_CLIENT_ID
+ENV VITE_BASE_URL=$VITE_BASE_URL
+ENV VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID
+
 RUN pnpm --filter @authforest/frontend build
 
 # Stage 2: Serve with nginx

@@ -35,13 +35,14 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        VITE_BASE_URL: ${VITE_BASE_URL:-http://localhost:8080}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-idp-admin-panel}
     ports:
       - "5173:80"
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      VITE_API_URL: http://localhost:8080
 
   db:
     image: postgres:17-alpine
