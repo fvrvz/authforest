@@ -59,7 +59,7 @@ A self-hosted **OpenID Connect Identity Provider** built with Go. Manage OAuth 2
 <div class="not-prose my-8 grid gap-4 sm:grid-cols-2">
 	{#each cards as card (card.href)}
 		<a
-			href={resolve(card.href)}
+			href={resolve(card.href as any)}
 			class="group flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-primary-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-primary-700"
 		>
 			<div class="rounded-lg bg-primary-50 p-2.5 dark:bg-primary-950">
