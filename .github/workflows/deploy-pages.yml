@@ -53,7 +53,7 @@ jobs:
 
       - name: Add CNAME for Custom Domain
         if: vars.CUSTOM_DOMAIN != ''
-        run: echo "${{ vars.CUSTOM_DOMAIN }}" > frontend/build/CNAME
+        run: echo "${{ vars.CUSTOM_DOMAIN }}" > build/CNAME
 
       - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3
