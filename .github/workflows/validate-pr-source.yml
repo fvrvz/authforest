@@ -1,0 +1,27 @@
+name: "Validate PR Source Branch"
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-source-branch:
+    name: Verify PR source branch
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check allowed source branch
+        run: |
+          HEAD_REF="${{ github.head_ref }}"
+          echo "Target branch: main"
+          echo "Source (head) branch: ${HEAD_REF}"
+
+          if [[ "$HEAD_REF" == "develop" || "$HEAD_REF" =~ ^hotfix/ ]]; then
+            echo "✅ Source branch '${HEAD_REF}' is allowed to merge into 'main'."
+            exit 0
+          else
+            echo "❌ ERROR: Pull requests to 'main' are only allowed from 'develop' or 'hotfix/*' branches."
+            echo "Received: '${HEAD_REF}'"
+            exit 1
+          fi
