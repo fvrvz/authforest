@@ -10,4 +10,8 @@ declare global {
   }
 }
 
+declare module "gsap/dist/ScrollTrigger.js" {
+  export const ScrollTrigger: any;
+}
+
 export {};

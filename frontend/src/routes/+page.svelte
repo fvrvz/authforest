@@ -1,9 +1,13 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { asset, resolve } from '$app/paths';
 	import { oidcService } from '$lib/services/oidc.service';
 	import { toastService } from '$lib/services/toast.service.svelte';
 	import { authStore } from '$lib/state/auth.svelte';
 	import { Button, DarkMode } from 'flowbite-svelte';
+	import gsap from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	import Lenis from 'lenis';
 	import {
 		ArrowRight,
 		BookOpen,
@@ -13,46 +17,111 @@
 		Cpu,
 		Database,
 		ExternalLink,
-		FileCode2,
 		Github,
-		Globe,
 		KeyRound,
 		Layers,
 		Lock,
 		Server,
 		Shield,
 		Terminal,
-		TreePine,
-		Users
+		TreePine
 	} from 'lucide-svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	let loggingIn = $state(false);
 	let isLoggedIn = $state(false);
-	let activeTab = $state<'discovery' | 'quickstart' | 'console'>('discovery');
-	let activeSdk = $state<'react' | 'nextjs' | 'go' | 'python' | 'curl'>('react');
 	let copiedSnippet = $state<string | null>(null);
+
+	// Interactive Token Studio State
+	let tokenRole = $state<'admin' | 'security_architect' | 'developer' | 'viewer'>('security_architect');
+	let tokenUsername = $state('faraaz@authforest.local');
+	let tokenScopes = $state<string[]>(['openid', 'profile', 'email', 'roles']);
+
+	// Interactive Flow Simulator State
+	let isSimulating = $state(false);
+	let simulationStep = $state<number>(0);
+
+	// Interactive Workbench State
+	let activeSdk = $state<'react' | 'nextjs' | 'go' | 'python' | 'curl'>('nextjs');
+	let activeTerminal = $state<'discovery' | 'jwks' | 'health'>('discovery');
+
+	let lenisInstance: Lenis | null = null;
 
 	onMount(() => {
 		const handlePageShow = () => {
 			loggingIn = false;
 		};
 		window.addEventListener('pageshow', handlePageShow);
-		return () => {
-			window.removeEventListener('pageshow', handlePageShow);
-		};
-	});
 
-	onMount(async () => {
-		try {
-			const user = await oidcService.getUser();
+		// Check auth status
+		oidcService.getUser().then((user) => {
 			if (user && !user.expired) {
 				authStore.setUser(user);
 				isLoggedIn = true;
 			}
-		} catch {
+		}).catch(() => {
 			isLoggedIn = false;
+		});
+
+		// Lenis smooth scroll & GSAP Animations (Browser only)
+		if (browser) {
+			try {
+				gsap.registerPlugin(ScrollTrigger);
+
+				lenisInstance = new Lenis({
+					duration: 1.2,
+					easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+					smoothWheel: true
+				});
+
+				const raf = (time: number) => {
+					lenisInstance?.raf(time);
+					requestAnimationFrame(raf);
+				};
+				requestAnimationFrame(raf);
+
+				lenisInstance.on('scroll', ScrollTrigger.update);
+				gsap.ticker.add((time: number) => {
+					lenisInstance?.raf(time * 1000);
+				});
+				gsap.ticker.lagSmoothing(0);
+
+				// Hero Reveal Animation
+				const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+				heroTl
+					.from('.gsap-hero-badge', { opacity: 0, y: -16, duration: 0.6 })
+					.from('.gsap-hero-title', { opacity: 0, y: 24, duration: 0.8 }, '-=0.3')
+					.from('.gsap-hero-desc', { opacity: 0, y: 16, duration: 0.7 }, '-=0.4')
+					.from('.gsap-hero-cta', { opacity: 0, y: 16, duration: 0.6 }, '-=0.4')
+					.from('.gsap-hero-card', { opacity: 0, scale: 0.98, y: 30, duration: 0.9 }, '-=0.3');
+
+				// ScrollTrigger reveals on features
+				gsap.utils.toArray<HTMLElement>('.gsap-reveal').forEach((el) => {
+					gsap.from(el, {
+						scrollTrigger: {
+							trigger: el,
+							start: 'top 85%',
+							toggleActions: 'play none none none'
+						},
+						opacity: 0,
+						y: 30,
+						duration: 0.8,
+						ease: 'power2.out'
+					});
+				});
+			} catch (e) {
+				console.warn('Animation initialization skipped:', e);
+			}
 		}
+
+		return () => {
+			window.removeEventListener('pageshow', handlePageShow);
+			lenisInstance?.destroy();
+		};
+	});
+
+	onDestroy(() => {
+		lenisInstance?.destroy();
 	});
 
 	async function handleLogin() {
@@ -73,6 +142,65 @@
 		}, 2000);
 	}
 
+	function toggleScope(scope: string) {
+		if (tokenScopes.includes(scope)) {
+			if (tokenScopes.length > 1) {
+				tokenScopes = tokenScopes.filter((s) => s !== scope);
+			}
+		} else {
+			tokenScopes = [...tokenScopes, scope];
+		}
+	}
+
+	function runFlowSimulation() {
+		if (isSimulating) return;
+		isSimulating = true;
+		simulationStep = 1;
+
+		setTimeout(() => {
+			simulationStep = 2;
+		}, 1200);
+
+		setTimeout(() => {
+			simulationStep = 3;
+		}, 2400);
+
+		setTimeout(() => {
+			simulationStep = 4;
+		}, 3600);
+
+		setTimeout(() => {
+			isSimulating = false;
+		}, 5200);
+	}
+
+	// Dynamic interactive token payload based on controls
+	let tokenPayload = $derived(
+		JSON.stringify(
+			{
+				iss: 'https://authforest.byfaraaz.com',
+				sub: 'usr_89f02c91',
+				preferred_username: tokenUsername.split('@')[0],
+				email: tokenUsername,
+				email_verified: true,
+				roles: [tokenRole],
+				scope: tokenScopes.join(' '),
+				client_id: 'prod_app_client_01',
+				iat: 1732541800,
+				exp: 1732545400,
+				jti: 'jwt_d83e1074a3f5'
+			},
+			null,
+			2
+		)
+	);
+
+	const tokenHeader = `{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": "authforest-2026-rsa-key-1"
+}`;
+
 	const discoveryJson = `{
   "issuer": "https://authforest.byfaraaz.com",
   "authorization_endpoint": "https://authforest.byfaraaz.com/auth",
@@ -82,12 +210,7 @@
   "response_types_supported": ["code"],
   "subject_types_supported": ["public"],
   "id_token_signing_alg_values_supported": ["RS256"],
-  "scopes_supported": [
-    "openid",
-    "profile",
-    "email",
-    "roles"
-  ],
+  "scopes_supported": ["openid", "profile", "email", "roles"],
   "token_endpoint_auth_methods_supported": [
     "client_secret_basic",
     "client_secret_post",
@@ -96,24 +219,33 @@
   "code_challenge_methods_supported": ["S256"]
 }`;
 
+	const jwksJson = `{
+  "keys": [
+    {
+      "kty": "RSA",
+      "use": "sig",
+      "kid": "authforest-2026-rsa-key-1",
+      "alg": "RS256",
+      "n": "u1w...[2048-bit modulus]...9kQ",
+      "e": "AQAB"
+    }
+  ]
+}`;
+
+	const healthJson = `{
+  "status": "pass",
+  "version": "2.0.1",
+  "engine": "go1.24",
+  "database": "postgresql-16 (connected)",
+  "uptime_seconds": 184920,
+  "jwt_key_rotation": "active (RS256)"
+}`;
+
 	const sdkSnippets = {
-		react: `// React SPA with oidc-client-ts
-import { UserManager } from "oidc-client-ts";
-
-export const userManager = new UserManager({
-  authority: "https://authforest.byfaraaz.com",
-  client_id: "your-client-id",
-  redirect_uri: window.location.origin + "/callback",
-  response_type: "code",
-  scope: "openid profile email roles",
-  code_challenge_method: "S256"
-});
-
-export const signIn = () => userManager.signinRedirect();`,
-		nextjs: `// Next.js (Auth.js / NextAuth)
+		nextjs: `// Next.js App Router (Auth.js / NextAuth v5)
 ` + ['import', 'NextAuth', 'from', '"next-auth";'].join(' ') + `
 
-export const { handlers, auth } = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     {
       id: "authforest",
@@ -126,251 +258,223 @@ export const { handlers, auth } = NextAuth({
     }
   ]
 });`,
-		go: `// Go backend token verification with coreos/go-oidc
-ctx := context.Background()
-provider, err := oidc.NewProvider(ctx, "https://authforest.byfaraaz.com")
-if err != nil {
-    log.Fatalf("OIDC discovery failed: %v", err)
-}
+		react: `// React SPA with PKCE (oidc-client-ts)
+import { UserManager } from "oidc-client-ts";
 
-verifier := provider.Verifier(&oidc.Config{
-    ClientID: "your-client-id",
-})
+export const userManager = new UserManager({
+  authority: "https://authforest.byfaraaz.com",
+  client_id: "spa-client-id",
+  redirect_uri: window.location.origin + "/callback",
+  response_type: "code",
+  scope: "openid profile email roles",
+  code_challenge_method: "S256"
+});
 
-// Validates RS256 signature against AuthForest JWKS automatically
-idToken, err := verifier.Verify(ctx, rawToken)`,
+// Redirect user to AuthForest login
+export const login = () => userManager.signinRedirect();`,
+		go: `// Go backend: zero-roundtrip offline RS256 token verification
+package main
+
+import (
+    "context"
+    "github.com/coreos/go-oidc/v3/oidc"
+)
+
+func verifyToken(ctx context.Context, rawToken string) (*oidc.IDToken, error) {
+    provider, err := oidc.NewProvider(ctx, "https://authforest.byfaraaz.com")
+    if err != nil {
+        return nil, err
+    }
+
+    verifier := provider.Verifier(&oidc.Config{ClientID: "api-service"})
+    return verifier.Verify(ctx, rawToken)
+}`,
 		python: `# Python FastAPI with Authlib
+from fastapi import FastAPI, Depends, Security
 from authlib.integrations.starlette_client import OAuth
 
+app = FastAPI()
 oauth = OAuth()
 oauth.register(
     name="authforest",
     server_metadata_url="https://authforest.byfaraaz.com/.well-known/openid-configuration",
-    client_id="your-client-id",
-    client_secret="your-client-secret",
+    client_id="fastapi-client-id",
+    client_secret="fastapi-secret",
     client_kwargs={"scope": "openid profile email roles"}
 )`,
-		curl: `# 1. Start Authorization Code Flow with PKCE
-https://authforest.byfaraaz.com/auth?response_type=code
-  &client_id=your-client-id
-  &redirect_uri=https://your-app.com/callback
+		curl: `# 1. Initiate PKCE Authorization Code Flow in Browser
+https://authforest.byfaraaz.com/auth?
+  response_type=code
+  &client_id=my-app
+  &redirect_uri=https://my-app.com/callback
   &scope=openid%20profile%20email%20roles
   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
   &code_challenge_method=S256
 
-# 2. Exchange authorization code for tokens
+# 2. Exchange authorization code for signed JWT tokens
 curl -X POST https://authforest.byfaraaz.com/oauth/token \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -d "grant_type=authorization_code" \\
-  -d "code=AUTHORIZATION_CODE" \\
-  -d "redirect_uri=https://your-app.com/callback" \\
-  -d "client_id=your-client-id" \\
+  -d "code=AUTH_CODE_RECEIVED" \\
+  -d "redirect_uri=https://my-app.com/callback" \\
+  -d "client_id=my-app" \\
   -d "code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"`
 	};
-
-	const features = [
-		{
-			title: 'OAuth 2.0 & OpenID Connect 1.0',
-			desc: 'Complete implementation of Authorization Code Flow with PKCE (RFC 7636), Refresh Tokens, ID Tokens, and UserInfo.',
-			icon: Shield,
-			badge: 'Protocol Core'
-		},
-		{
-			title: 'Zero-Config OIDC Discovery',
-			desc: 'Standard /.well-known/openid-configuration endpoint ensures instant plug-and-play compatibility with any OIDC client library.',
-			icon: Globe,
-			badge: 'Standard'
-		},
-		{
-			title: 'Centralized Application Registry',
-			desc: 'Register and manage client applications, configure redirect URIs, toggle PKCE enforcement, and issue secure client credentials.',
-			icon: FileCode2,
-			badge: 'Console'
-		},
-		{
-			title: 'Fine-Grained RBAC & Claims',
-			desc: 'Define custom roles and permissions. Assigned roles are automatically embedded into signed JWT access and ID tokens.',
-			icon: Users,
-			badge: 'Security'
-		},
-		{
-			title: 'Built with Go & PostgreSQL',
-			desc: 'Sub-millisecond token issuance, lightweight memory footprint, single-binary distribution, and battle-tested SQL persistence.',
-			icon: Cpu,
-			badge: 'High Performance'
-		},
-		{
-			title: 'Developer SDKs & Documentation',
-			desc: 'Comprehensive guides, code samples, and production recipes for React, Next.js, Go, Python, and Docker container deployment.',
-			icon: BookOpen,
-			badge: 'Developer First'
-		}
-	];
 
 	const guides = [
 		{
 			title: 'Quick Start Guide',
-			desc: 'Learn how AuthForest works and integrate your first app in 5 minutes.',
+			desc: 'Learn the architectural foundations and integrate your first application in 5 minutes.',
 			href: '/docs/getting-started',
 			icon: BookOpen,
-			tag: 'Intro'
+			tag: '5 min'
 		},
 		{
-			title: 'Docker Setup',
-			desc: 'Spin up AuthForest with PostgreSQL in Docker Compose with one command.',
+			title: 'Docker & Compose Setup',
+			desc: 'Deploy AuthForest with PostgreSQL, Redis, and health checks with a single command.',
 			href: '/docs/docker-setup',
 			icon: Server,
 			tag: 'DevOps'
 		},
 		{
-			title: 'React & SPA Integration',
-			desc: 'Connect Single Page Applications using oidc-client-ts with PKCE.',
-			href: '/docs/oidc-react',
-			icon: Code2,
-			tag: 'Frontend'
-		},
-		{
-			title: 'Next.js & NextAuth',
-			desc: 'Drop-in OIDC provider setup for NextAuth / Auth.js in Next.js 14/15.',
+			title: 'Next.js & NextAuth Integration',
+			desc: 'Seamless OIDC provider configuration for App Router, server components, and session handling.',
 			href: '/docs/oidc-nextauth',
 			icon: Layers,
 			tag: 'Fullstack'
 		},
 		{
-			title: 'Go Backend Verification',
-			desc: 'Verify JWT access tokens and parse user claims using coreos/go-oidc.',
+			title: 'React & SPA (PKCE)',
+			desc: 'Single Page App authentication with oidc-client-ts, secure tokens, and silent refresh.',
+			href: '/docs/oidc-react',
+			icon: Code2,
+			tag: 'Frontend'
+		},
+		{
+			title: 'Go Microservice Verification',
+			desc: 'Fast, offline RS256 JWT validation against cached JWKS keys with zero DB roundtrips.',
 			href: '/docs/oidc-go',
 			icon: KeyRound,
 			tag: 'Backend'
 		},
 		{
-			title: 'API Reference',
-			desc: 'Full specification of all REST endpoints: Auth, OAuth, OIDC, and Users.',
+			title: 'REST API & Specs',
+			desc: 'Complete technical reference for OIDC Discovery, Token Exchange, Introspection & Users.',
 			href: '/docs/api-reference',
 			icon: Database,
-			tag: 'Reference'
+			tag: 'OpenAPI'
 		}
-	];
-
-	const standards = [
-		'OpenID Connect Core 1.0',
-		'OAuth 2.1 & RFC 6749',
-		'RFC 7636 PKCE (S256)',
-		'RFC 7519 JSON Web Tokens (JWT)',
-		'RFC 7517 JWKS Key Rotation',
-		'Role-Based Access Control (RBAC)'
 	];
 </script>
 
 <svelte:head>
-	<title>AuthForest — Modern Open Source OAuth 2.0 & OIDC Identity Provider</title>
+	<title>AuthForest — Open Source OAuth 2.0 & OpenID Connect Identity Engine</title>
 	<meta
 		name="description"
-		content="AuthForest is a lightweight, self-hostable OAuth 2.0 and OpenID Connect (OIDC) identity provider written in Go. Secure your web apps, SPAs, and APIs with standards-compliant authentication."
+		content="AuthForest is a high-performance, developer-first OAuth 2.0 and OpenID Connect (OIDC) identity provider written in Go. Standard PKCE, RS256 JWTs, and fine-grained RBAC."
 	/>
 </svelte:head>
 
-<div class="min-h-dvh bg-white text-gray-900 transition-colors selection:bg-primary-500/20 selection:text-primary-700 dark:bg-gray-950 dark:text-gray-100 dark:selection:text-primary-300">
-	<!-- Top Navigation -->
-	<header class="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-md dark:border-gray-800/80 dark:bg-gray-950/80">
-		<div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
-			<!-- Logo -->
-			<a href={resolve('/')} class="flex items-center gap-2.5 transition-transform hover:scale-[1.02]">
-				<div class="flex size-9 items-center justify-center rounded-xl bg-primary-600/10 text-primary-600 shadow-xs dark:bg-primary-500/15 dark:text-primary-400">
-					<TreePine class="size-5.5" strokeWidth={2.2} />
+<div class="relative min-h-dvh overflow-x-hidden bg-[#090b0e] text-gray-100 selection:bg-emerald-500/25 selection:text-emerald-300">
+	<!-- Background Technical Grid & Ambient Lighting -->
+	<div class="pointer-events-none fixed inset-0 bg-grid-pattern opacity-60"></div>
+	<div class="pointer-events-none fixed -top-40 left-1/2 -z-10 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-b from-emerald-500/10 via-cyan-500/5 to-transparent blur-3xl"></div>
+
+	<!-- Floating Glass Navbar -->
+	<div class="fixed top-4 inset-x-0 z-50 flex justify-center px-4 sm:px-6">
+		<header class="flex w-full max-w-5xl items-center justify-between rounded-full border border-white/10 bg-gray-950/80 px-4 py-2.5 shadow-2xl backdrop-blur-xl sm:px-6">
+			<!-- Brand -->
+			<a href={resolve('/')} class="group flex items-center gap-2.5">
+				<div class="flex size-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 transition-transform group-hover:scale-105">
+					<TreePine class="size-4.5" strokeWidth={2.2} />
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">AuthForest</span>
-					<span class="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-950/80 dark:text-primary-300">
-						v2.0
+					<span class="text-sm font-bold tracking-tight text-white font-mono">AuthForest</span>
+					<span class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-2xs font-mono font-medium text-emerald-400">
+						OIDC 1.0
 					</span>
 				</div>
 			</a>
 
-			<!-- Nav items -->
-			<nav class="hidden items-center gap-7 text-sm font-medium text-gray-600 md:flex dark:text-gray-300">
-				<a href="#features" class="transition-colors hover:text-primary-600 dark:hover:text-primary-400">Features</a>
-				<a href="#architecture" class="transition-colors hover:text-primary-600 dark:hover:text-primary-400">Architecture</a>
-				<a href="#discovery" class="transition-colors hover:text-primary-600 dark:hover:text-primary-400">OIDC Discovery</a>
-				<a href={resolve('/docs')} class="transition-colors hover:text-primary-600 dark:hover:text-primary-400">Documentation</a>
-				<a href={resolve('/docs/api-reference')} class="transition-colors hover:text-primary-600 dark:hover:text-primary-400">API</a>
+			<!-- Center Nav Links -->
+			<nav class="hidden items-center gap-6 text-xs font-mono text-gray-300 md:flex">
+				<a href="#token-studio" class="transition-colors hover:text-emerald-400">Token Lab</a>
+				<a href="#flow-architecture" class="transition-colors hover:text-emerald-400">Protocol Flow</a>
+				<a href="#code-matrix" class="transition-colors hover:text-emerald-400">SDKs</a>
+				<a href={resolve('/docs')} class="transition-colors hover:text-emerald-400">Documentation</a>
+				<a href={resolve('/docs/api-reference')} class="transition-colors hover:text-emerald-400">API</a>
 			</nav>
 
-			<!-- Right actions -->
-			<div class="flex items-center gap-3">
+			<!-- Right Actions -->
+			<div class="flex items-center gap-2.5">
 				<a
 					href="https://github.com/fvrvz/authforest"
 					target="_blank"
 					rel="noreferrer"
-					class="flex size-9 items-center justify-center rounded-lg border border-gray-200 text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+					class="flex size-8 items-center justify-center rounded-full border border-white/10 text-gray-300 transition-colors hover:border-emerald-500/40 hover:text-white"
 					aria-label="GitHub Repository"
 				>
-					<Github class="size-4.5" />
+					<Github class="size-4" />
 				</a>
 
-				<DarkMode class="rounded-lg p-2" />
+				<DarkMode class="rounded-full p-1.5 text-gray-400 hover:text-white" />
 
 				{#if isLoggedIn}
 					<Button
 						href={resolve('/dashboard')}
-						class="gap-1.5 font-medium shadow-xs"
-						size="sm"
+						size="xs"
+						class="rounded-full bg-emerald-500 font-mono text-xs text-black font-semibold hover:bg-emerald-400 shadow-md shadow-emerald-500/20"
 					>
-						Open Console
-						<ArrowRight class="size-4" />
+						Console
+						<ArrowRight class="ml-1 size-3" />
 					</Button>
 				{:else}
 					<Button
 						onclick={handleLogin}
-						class="gap-1.5 font-medium shadow-xs"
-						size="sm"
+						size="xs"
+						class="rounded-full bg-white font-mono text-xs text-black font-semibold hover:bg-gray-200 shadow-md"
 						loading={loggingIn}
 					>
-						Admin Console
-						<ArrowRight class="size-4" />
+						Sign In
+						<ArrowRight class="ml-1 size-3" />
 					</Button>
 				{/if}
 			</div>
-		</div>
-	</header>
+		</header>
+	</div>
 
 	<!-- Hero Section -->
-	<section class="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
-		<!-- Background Glow Accents -->
-		<div class="pointer-events-none absolute -top-40 left-1/2 -z-10 h-96 w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-tr from-primary-500/20 via-sky-500/15 to-transparent blur-3xl dark:from-primary-600/25 dark:via-sky-500/10"></div>
-		
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<main class="relative z-10 pt-32 pb-24 lg:pt-40 lg:pb-32">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 			<div class="flex flex-col items-center text-center">
-				<!-- Pill Tag -->
-				<div class="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50/70 px-3.5 py-1 text-xs font-semibold text-primary-800 shadow-2xs backdrop-blur-xs dark:border-primary-800/80 dark:bg-primary-950/60 dark:text-primary-300">
-					<span class="size-2 rounded-full bg-primary-500 animate-pulse"></span>
-					<span>Open Source OAuth 2.0 & OpenID Connect 1.0 Identity Provider</span>
+				<!-- Technical Badge -->
+				<div class="gsap-hero-badge inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3.5 py-1 text-2xs font-mono text-emerald-300 backdrop-blur-md shadow-inner">
+					<span class="size-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+					<span>RFC 6749 • RFC 7636 PKCE • ZERO-ROUNDTRIP RS256 VERIFICATION</span>
 				</div>
 
 				<!-- Main Headline -->
-				<h1 class="mt-6 max-w-4xl text-4xl font-extrabold tracking-tight text-gray-900 sm:text-6xl lg:text-7xl dark:text-white">
-					Modern, Developer-First <br class="hidden sm:inline" />
-					<span class="bg-gradient-to-r from-primary-600 via-indigo-500 to-sky-500 bg-clip-text text-transparent dark:from-primary-400 dark:via-indigo-300 dark:to-sky-400">
-						Identity Engine
+				<h1 class="gsap-hero-title mt-6 max-w-4xl text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl font-sans leading-[1.08]">
+					The Open Source Identity Engine <br class="hidden sm:inline" />
+					<span class="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+						Built for Developers
 					</span>
-					for Cloud & Edge
 				</h1>
 
-				<!-- Subtitle -->
-				<p class="mt-6 max-w-2xl text-base text-gray-600 sm:text-lg sm:leading-8 dark:text-gray-300">
-					AuthForest is a lightweight, self-hostable OIDC Identity Provider built with Go.
-					Secure your web apps, SPAs, and microservices with standards-compliant OAuth 2.1,
-					PKCE, fine-grained RBAC, and zero-config discovery.
+				<!-- Subhead -->
+				<p class="gsap-hero-desc mt-6 max-w-2xl text-base text-gray-400 sm:text-lg sm:leading-relaxed font-sans">
+					AuthForest is a lightweight, self-hostable OpenID Connect & OAuth 2.1 Identity Provider written in Go.
+					Issue signed RS256 tokens, enforce fine-grained RBAC claims, and protect your cloud stack with zero external dependencies.
 				</p>
 
 				<!-- Hero CTAs -->
-				<div class="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+				<div class="gsap-hero-cta mt-8 flex flex-wrap items-center justify-center gap-3.5">
 					<Button
 						href={resolve('/docs/getting-started')}
-						class="gap-2 px-5 py-3 text-sm font-semibold shadow-md shadow-primary-500/20 hover:shadow-primary-500/30"
+						class="rounded-xl bg-emerald-500 px-6 py-3 font-mono text-xs font-semibold text-black transition-all hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
 						size="lg"
 					>
-						<BookOpen class="size-4.5" />
+						<BookOpen class="mr-2 size-4" />
 						Explore Documentation
 					</Button>
 
@@ -378,416 +482,475 @@ curl -X POST https://authforest.byfaraaz.com/oauth/token \\
 						<Button
 							href={resolve('/dashboard')}
 							outline
-							class="gap-2 px-5 py-3 text-sm font-semibold"
+							class="rounded-xl border-white/20 bg-white/5 px-6 py-3 font-mono text-xs font-semibold text-white hover:bg-white/10"
 							size="lg"
 						>
-							<Lock class="size-4" />
+							<Lock class="mr-2 size-4 text-emerald-400" />
 							Admin Console
 						</Button>
 					{:else}
 						<Button
 							onclick={handleLogin}
 							outline
-							class="gap-2 px-5 py-3 text-sm font-semibold"
+							class="rounded-xl border-white/20 bg-white/5 px-6 py-3 font-mono text-xs font-semibold text-white hover:bg-white/10"
 							size="lg"
 							loading={loggingIn}
 						>
-							<Lock class="size-4" />
-							Sign In / Console
+							<Lock class="mr-2 size-4 text-emerald-400" />
+							Console Sign In
 						</Button>
 					{/if}
 
-					<Button
-						href={resolve('/docs/api-reference')}
-						color="alternative"
-						class="gap-2 px-5 py-3 text-sm font-semibold"
-						size="lg"
-					>
-						<Database class="size-4" />
-						REST API Specs
-					</Button>
-				</div>
-
-				<!-- Quick Docker CLI Pill -->
-				<div class="mt-8 flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/90 px-3.5 py-2 text-xs font-mono text-gray-700 shadow-2xs dark:border-gray-800 dark:bg-gray-900/90 dark:text-gray-300">
-					<Terminal class="size-3.5 text-primary-600 dark:text-primary-400" />
-					<span>docker compose up -d</span>
-					<button
-						type="button"
-						onclick={() => copyToClipboard('docker compose up -d', 'docker-cmd')}
-						class="ml-2 flex size-5 cursor-pointer items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-						title="Copy command"
-					>
-						{#if copiedSnippet === 'docker-cmd'}
-							<Check class="size-3 text-emerald-500" />
-						{:else}
-							<Copy class="size-3" />
-						{/if}
-					</button>
-				</div>
-			</div>
-
-			<!-- Interactive Showcase Tabbed Card -->
-			<div id="discovery" class="mt-14 overflow-hidden rounded-2xl border border-gray-200 bg-gray-900 shadow-2xl dark:border-gray-800 dark:bg-gray-950">
-				<!-- Card Header / Tabs -->
-				<div class="flex flex-wrap items-center justify-between border-b border-gray-800 bg-gray-900/90 px-4 py-3 sm:px-6">
-					<div class="flex items-center gap-2">
-						<span class="size-3 rounded-full bg-red-500/80"></span>
-						<span class="size-3 rounded-full bg-yellow-500/80"></span>
-						<span class="size-3 rounded-full bg-green-500/80"></span>
-						<span class="ml-2 text-xs font-mono text-gray-400">authforest.byfaraaz.com</span>
-					</div>
-
-					<!-- Tab Switcher -->
-					<div class="flex items-center gap-1.5 rounded-lg bg-gray-950/80 p-1">
+					<div class="flex items-center gap-2 rounded-xl border border-white/10 bg-gray-900/90 px-4 py-3 font-mono text-xs text-gray-300 shadow-inner">
+						<Terminal class="size-4 text-emerald-400" />
+						<span>docker compose up -d</span>
 						<button
 							type="button"
-							onclick={() => (activeTab = 'discovery')}
-							class="cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors {activeTab === 'discovery' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}"
+							onclick={() => copyToClipboard('docker compose up -d', 'hero-docker')}
+							class="ml-2 cursor-pointer text-gray-400 hover:text-white"
+							title="Copy command"
 						>
-							OIDC Discovery
-						</button>
-						<button
-							type="button"
-							onclick={() => (activeTab = 'quickstart')}
-							class="cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors {activeTab === 'quickstart' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}"
-						>
-							SDK Integration
-						</button>
-						<button
-							type="button"
-							onclick={() => (activeTab = 'console')}
-							class="cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors {activeTab === 'console' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'}"
-						>
-							Console Preview
-						</button>
-					</div>
-				</div>
-
-				<!-- Tab 1: OIDC Discovery -->
-				{#if activeTab === 'discovery'}
-					<div class="p-4 sm:p-6">
-						<div class="mb-3 flex items-center justify-between text-xs text-gray-400">
-							<div class="flex items-center gap-2 font-mono">
-								<span class="rounded bg-emerald-500/20 px-1.5 py-0.5 font-bold text-emerald-400">GET</span>
-								<span>/.well-known/openid-configuration</span>
-							</div>
-							<button
-								type="button"
-								onclick={() => copyToClipboard(discoveryJson, 'discovery-json')}
-								class="flex cursor-pointer items-center gap-1 rounded bg-gray-800 px-2 py-1 text-gray-300 hover:bg-gray-700"
-							>
-								{#if copiedSnippet === 'discovery-json'}
-									<Check class="size-3 text-emerald-400" />
-									<span>Copied</span>
-								{:else}
-									<Copy class="size-3" />
-									<span>Copy JSON</span>
-								{/if}
-							</button>
-						</div>
-						<pre class="overflow-x-auto rounded-xl bg-gray-950 p-4 font-mono text-xs text-gray-300 sm:text-sm leading-relaxed"><code>{discoveryJson}</code></pre>
-					</div>
-				{/if}
-
-				<!-- Tab 2: SDK Quickstart -->
-				{#if activeTab === 'quickstart'}
-					<div class="p-4 sm:p-6">
-						<!-- Language pill selector -->
-						<div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-gray-800 pb-3">
-							<div class="flex flex-wrap gap-1.5">
-								<button
-									type="button"
-									onclick={() => (activeSdk = 'react')}
-									class="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium {activeSdk === 'react' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40' : 'text-gray-400 hover:text-white'}"
-								>
-									React / SPA
-								</button>
-								<button
-									type="button"
-									onclick={() => (activeSdk = 'nextjs')}
-									class="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium {activeSdk === 'nextjs' ? 'bg-primary-500/20 text-primary-400 border border-primary-500/40' : 'text-gray-400 hover:text-white'}"
-								>
-									Next.js (Auth.js)
-								</button>
-								<button
-									type="button"
-									onclick={() => (activeSdk = 'go')}
-									class="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium {activeSdk === 'go' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40' : 'text-gray-400 hover:text-white'}"
-								>
-									Go
-								</button>
-								<button
-									type="button"
-									onclick={() => (activeSdk = 'python')}
-									class="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium {activeSdk === 'python' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'text-gray-400 hover:text-white'}"
-								>
-									Python
-								</button>
-								<button
-									type="button"
-									onclick={() => (activeSdk = 'curl')}
-									class="cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium {activeSdk === 'curl' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40' : 'text-gray-400 hover:text-white'}"
-								>
-									cURL / HTTP
-								</button>
-							</div>
-
-							<button
-								type="button"
-								onclick={() => copyToClipboard(sdkSnippets[activeSdk], `sdk-${activeSdk}`)}
-								class="flex cursor-pointer items-center gap-1 rounded bg-gray-800 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700"
-							>
-								{#if copiedSnippet === `sdk-${activeSdk}`}
-									<Check class="size-3 text-emerald-400" />
-									<span>Copied</span>
-								{:else}
-									<Copy class="size-3" />
-									<span>Copy Code</span>
-								{/if}
-							</button>
-						</div>
-
-						<pre class="overflow-x-auto rounded-xl bg-gray-950 p-4 font-mono text-xs text-gray-200 sm:text-sm leading-relaxed"><code>{sdkSnippets[activeSdk]}</code></pre>
-					</div>
-				{/if}
-
-				<!-- Tab 3: Console Preview -->
-				{#if activeTab === 'console'}
-					<div class="p-4 sm:p-6 text-gray-200">
-						<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-							<!-- App Card -->
-							<div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-semibold text-primary-400">SPA Application</span>
-									<span class="rounded bg-emerald-500/20 px-1.5 py-0.5 text-2xs text-emerald-400">Active</span>
-								</div>
-								<h4 class="mt-2 text-sm font-bold text-white">Frontend Dashboard</h4>
-								<div class="mt-2 space-y-1 font-mono text-2xs text-gray-400">
-									<div>Client ID: <span class="text-gray-300">authforest_admin_panel</span></div>
-									<div>Flow: <span class="text-gray-300">Authorization Code + PKCE</span></div>
-									<div>Redirect: <span class="text-gray-300">/callback</span></div>
-								</div>
-							</div>
-
-							<!-- Roles Card -->
-							<div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-semibold text-indigo-400">RBAC Configuration</span>
-									<span class="text-2xs text-gray-400">3 Roles</span>
-								</div>
-								<h4 class="mt-2 text-sm font-bold text-white">Role Mapping & Scopes</h4>
-								<div class="mt-2 flex flex-wrap gap-1 font-mono text-2xs">
-									<span class="rounded bg-primary-950 px-1.5 py-0.5 text-primary-300 border border-primary-800">admin</span>
-									<span class="rounded bg-indigo-950 px-1.5 py-0.5 text-indigo-300 border border-indigo-800">developer</span>
-									<span class="rounded bg-gray-800 px-1.5 py-0.5 text-gray-300">user</span>
-								</div>
-								<p class="mt-2 text-2xs text-gray-400">Embedded in JWT token claims automatically.</p>
-							</div>
-
-							<!-- OIDC Keys Card -->
-							<div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
-								<div class="flex items-center justify-between">
-									<span class="text-xs font-semibold text-sky-400">Key Management</span>
-									<span class="rounded bg-sky-500/20 px-1.5 py-0.5 text-2xs text-sky-400">RS256</span>
-								</div>
-								<h4 class="mt-2 text-sm font-bold text-white">JWKS Key Rotation</h4>
-								<div class="mt-2 font-mono text-2xs text-gray-400 space-y-1">
-									<div>Algorithm: <span class="text-gray-300">RSA 2048-bit</span></div>
-									<div>Public Endpoint: <span class="text-gray-300">/.well-known/jwks.json</span></div>
-									<div>Auto-rotated & signed by IdP</div>
-								</div>
-							</div>
-						</div>
-
-						<div class="mt-4 flex items-center justify-between rounded-xl bg-gray-950 p-4 border border-gray-800">
-							<div class="flex items-center gap-3">
-								<div class="flex size-8 items-center justify-center rounded-lg bg-primary-600/20 text-primary-400">
-									<Lock class="size-4" />
-								</div>
-								<div>
-									<h5 class="text-xs font-bold text-white">Full-Featured Admin Management</h5>
-									<p class="text-2xs text-gray-400">Manage client credentials, users, roles, and security audit logs.</p>
-								</div>
-							</div>
-							{#if isLoggedIn}
-								<Button
-									href={resolve('/dashboard')}
-									size="xs"
-									class="gap-1"
-								>
-									Open Dashboard
-									<ArrowRight class="size-3" />
-								</Button>
+							{#if copiedSnippet === 'hero-docker'}
+								<Check class="size-3.5 text-emerald-400" />
 							{:else}
-								<Button
-									onclick={handleLogin}
-									size="xs"
-									class="gap-1"
-								>
-									Open Dashboard
-									<ArrowRight class="size-3" />
-								</Button>
+								<Copy class="size-3.5" />
 							{/if}
+						</button>
+					</div>
+				</div>
+
+				<!-- Architecture Benchmarks Metric Bar -->
+				<div class="mt-12 grid w-full max-w-4xl grid-cols-2 gap-3 border-y border-white/10 py-4 font-mono text-xs text-gray-400 sm:grid-cols-4">
+					<div class="flex flex-col items-center">
+						<span class="text-sm font-bold text-white">&lt;0.8ms</span>
+						<span class="text-2xs text-gray-500">Token Issuance Latency</span>
+					</div>
+					<div class="flex flex-col items-center">
+						<span class="text-sm font-bold text-emerald-400">RS256</span>
+						<span class="text-2xs text-gray-500">2048-bit Asymmetric Keys</span>
+					</div>
+					<div class="flex flex-col items-center">
+						<span class="text-sm font-bold text-white">RFC 7636</span>
+						<span class="text-2xs text-gray-500">PKCE S256 Mandated</span>
+					</div>
+					<div class="flex flex-col items-center">
+						<span class="text-sm font-bold text-cyan-400">0 ms DB</span>
+						<span class="text-2xs text-gray-500">Offline API Verification</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Live Interactive JWT & Claims Studio -->
+			<div id="token-studio" class="gsap-hero-card mt-16 overflow-hidden rounded-2xl border border-white/10 bg-gray-950/90 shadow-2xl backdrop-blur-2xl">
+				<!-- Studio Header -->
+				<div class="flex flex-wrap items-center justify-between border-b border-white/10 bg-gray-900/50 px-5 py-3.5">
+					<div class="flex items-center gap-3">
+						<div class="flex gap-1.5">
+							<span class="size-3 rounded-full bg-red-500/70"></span>
+							<span class="size-3 rounded-full bg-yellow-500/70"></span>
+							<span class="size-3 rounded-full bg-green-500/70"></span>
 						</div>
+						<span class="font-mono text-xs font-semibold text-gray-300">Live Cryptographic Claims Studio</span>
 					</div>
-				{/if}
-			</div>
-		</div>
-	</section>
 
-	<!-- Protocol Standards Banner -->
-	<section class="border-y border-gray-200/80 bg-gray-50/70 py-6 dark:border-gray-800/80 dark:bg-gray-900/40">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400">
-				{#each standards as item (item)}
-					<div class="flex items-center gap-2">
-						<span class="size-1.5 rounded-full bg-primary-500"></span>
-						<span>{item}</span>
+					<div class="flex items-center gap-2 font-mono text-2xs text-emerald-400">
+						<span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
+						<span>Realtime RS256 JWT Generation</span>
 					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
+				</div>
 
-	<!-- Core Features Grid -->
-	<section id="features" class="py-20 lg:py-28">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center">
-				<h2 class="text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">Features</h2>
-				<h3 class="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
-					Everything You Need from an Identity Engine
-				</h3>
-				<p class="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400">
-					Engineered for developer happiness, compliance, and enterprise-level reliability.
-				</p>
-			</div>
-
-			<div class="mt-14 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-				{#each features as feat (feat.title)}
-					<div class="relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-7 shadow-xs transition-all hover:border-primary-400/60 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-600/50">
+				<!-- Studio Body -->
+				<div class="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
+					<!-- Left Control Panel -->
+					<div class="p-5 lg:col-span-5 space-y-5 bg-gray-950/40 font-mono">
 						<div>
-							<div class="flex items-center justify-between">
-								<div class="flex size-11 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-950 dark:text-primary-400">
-									<feat.icon class="size-5.5" strokeWidth={1.9} />
-								</div>
-								<span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-2xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-									{feat.badge}
-								</span>
+							<label for="token-role-select" class="text-2xs uppercase tracking-wider text-gray-400">Active User Role</label>
+							<div id="token-role-select" class="mt-2 grid grid-cols-2 gap-2">
+								{#each (['admin', 'security_architect', 'developer', 'viewer'] as const) as role (role)}
+									<button
+										type="button"
+										onclick={() => (tokenRole = role)}
+										class="cursor-pointer rounded-lg border px-3 py-2 text-left text-xs transition-all {tokenRole === role ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-300 font-semibold' : 'border-white/10 bg-gray-900/60 text-gray-400 hover:border-white/20'}"
+									>
+										{role}
+									</button>
+								{/each}
 							</div>
-							<h4 class="mt-5 text-lg font-bold text-gray-900 dark:text-white">{feat.title}</h4>
-							<p class="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{feat.desc}</p>
+						</div>
+
+						<div>
+							<label for="identity-input" class="text-2xs uppercase tracking-wider text-gray-400">User Identity (Subject)</label>
+							<input
+								id="identity-input"
+								type="text"
+								bind:value={tokenUsername}
+								class="mt-1.5 w-full rounded-lg border border-white/10 bg-gray-900 px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:border-emerald-500 focus:outline-none"
+							/>
+						</div>
+
+						<div>
+							<label for="scope-badges" class="text-2xs uppercase tracking-wider text-gray-400">Granted Scopes</label>
+							<div id="scope-badges" class="mt-2 flex flex-wrap gap-1.5">
+								{#each ['openid', 'profile', 'email', 'roles', 'vault:read', 'api:deploy'] as scope (scope)}
+									<button
+										type="button"
+										onclick={() => toggleScope(scope)}
+										class="cursor-pointer rounded-md border px-2.5 py-1 text-2xs transition-colors {tokenScopes.includes(scope) ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-300' : 'border-white/10 bg-gray-900 text-gray-500 hover:text-gray-300'}"
+									>
+										{scope}
+									</button>
+								{/each}
+							</div>
+						</div>
+
+						<div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-2xs text-emerald-400">
+							<div class="flex items-center gap-1.5 font-bold">
+								<Shield class="size-3.5 text-emerald-400" />
+								<span>Zero-Database Verification</span>
+							</div>
+							<p class="mt-1 text-gray-400 leading-normal">
+								Resource servers download public keys from <code class="text-emerald-300">/.well-known/jwks.json</code> and verify token authenticity locally in &lt;100 microseconds.
+							</p>
 						</div>
 					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
 
-	<!-- Architecture & Flow Sequence -->
-	<section id="architecture" class="border-t border-gray-200 bg-gray-50/50 py-20 lg:py-28 dark:border-gray-800 dark:bg-gray-900/30">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="text-center">
-				<h2 class="text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">Architecture</h2>
-				<h3 class="mt-2 text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
-					How AuthForest Authentication Works
-				</h3>
-				<p class="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400">
-					Standard OAuth 2.0 Authorization Code Flow with PKCE ensures secure authentication without exposing client secrets in browser environments.
-				</p>
-			</div>
+					<!-- Right Live Token Inspector -->
+					<div class="p-5 lg:col-span-7 bg-gray-900/30 font-mono text-xs space-y-4">
+						<div class="flex items-center justify-between text-2xs text-gray-400 border-b border-white/10 pb-2">
+							<div class="flex items-center gap-3">
+								<span class="text-red-400 font-bold">HEADER</span>
+								<span class="text-purple-400 font-bold">PAYLOAD</span>
+								<span class="text-cyan-400 font-bold">SIGNATURE</span>
+							</div>
+							<button
+								type="button"
+								onclick={() => copyToClipboard(tokenPayload, 'copy-token-payload')}
+								class="flex cursor-pointer items-center gap-1 rounded bg-white/10 px-2 py-1 text-gray-300 hover:bg-white/20 transition-colors"
+							>
+								{#if copiedSnippet === 'copy-token-payload'}
+									<Check class="size-3 text-emerald-400" />
+									<span>Copied JSON</span>
+								{:else}
+									<Copy class="size-3" />
+									<span>Copy Payload</span>
+								{/if}
+							</button>
+						</div>
 
-			<div class="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-				<!-- Step 1 -->
-				<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-					<div class="flex size-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
-						1
+						<div class="space-y-3">
+							<!-- Header -->
+							<div>
+								<span class="text-2xs text-gray-500">// JOSE Header (Algorithm & Key ID)</span>
+								<pre class="overflow-x-auto rounded-lg bg-gray-950 p-2.5 text-red-300 text-2xs leading-relaxed"><code>{tokenHeader}</code></pre>
+							</div>
+
+							<!-- Payload -->
+							<div>
+								<span class="text-2xs text-gray-500">// Decoded Claims Payload (Auto-generated)</span>
+								<pre class="overflow-x-auto rounded-lg bg-gray-950 p-2.5 text-purple-300 text-2xs leading-relaxed max-h-56"><code>{tokenPayload}</code></pre>
+							</div>
+
+							<!-- Verified Badge -->
+							<div class="flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 text-2xs text-emerald-400">
+								<div class="flex items-center gap-2">
+									<Check class="size-3.5 text-emerald-400" />
+									<span class="font-bold">Cryptographically Validated via AuthForest JWKS</span>
+								</div>
+								<span class="font-mono text-gray-400">kid: authforest-2026-rsa-key-1</span>
+							</div>
+						</div>
 					</div>
-					<h4 class="mt-4 text-base font-bold text-gray-900 dark:text-white">Client Initiation</h4>
-					<p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-						Client app redirects user to AuthForest <code class="font-mono text-2xs">/auth</code> with PKCE <code class="font-mono text-2xs">code_challenge</code> and requested scopes.
-					</p>
-				</div>
-
-				<!-- Step 2 -->
-				<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-					<div class="flex size-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
-						2
-					</div>
-					<h4 class="mt-4 text-base font-bold text-gray-900 dark:text-white">User Authentication</h4>
-					<p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-						AuthForest presents login screen, verifies user credentials, checks role assignments, and records user consent.
-					</p>
-				</div>
-
-				<!-- Step 3 -->
-				<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-					<div class="flex size-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
-						3
-					</div>
-					<h4 class="mt-4 text-base font-bold text-gray-900 dark:text-white">Code & Token Exchange</h4>
-					<p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-						AuthForest issues one-time authorization code. Client exchanges code with <code class="font-mono text-2xs">code_verifier</code> for signed JWT Access, ID & Refresh tokens.
-					</p>
-				</div>
-
-				<!-- Step 4 -->
-				<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-gray-900">
-					<div class="flex size-9 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
-						4
-					</div>
-					<h4 class="mt-4 text-base font-bold text-gray-900 dark:text-white">Offline Verification</h4>
-					<p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-						Backend APIs verify RS256 token signatures offline against cached public keys from <code class="font-mono text-2xs">/.well-known/jwks.json</code> with zero database round-trips.
-					</p>
 				</div>
 			</div>
 		</div>
-	</section>
+	</main>
 
-	<!-- Documentation & Guides Section -->
-	<section class="py-20 lg:py-28">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-			<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
+	<!-- Interactive PKCE Protocol Flow Simulator -->
+	<section id="flow-architecture" class="gsap-reveal border-t border-white/10 bg-[#07090c] py-20 lg:py-28">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+			<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
 				<div>
-					<h2 class="text-xs font-bold uppercase tracking-widest text-primary-600 dark:text-primary-400">Documentation</h2>
-					<h3 class="mt-1 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl dark:text-white">
-						Developer Guides & Integration Recipes
-					</h3>
+					<span class="font-mono text-xs uppercase tracking-widest text-emerald-400">[RFC 7636 PROTOCOL FLOW]</span>
+					<h2 class="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-sans">
+						Interactive PKCE Authorization Pipeline
+					</h2>
+					<p class="mt-2 text-sm text-gray-400 max-w-xl">
+						Observe how proof-key-for-code-exchange prevents authorization interception attacks without exposing confidential secrets to client applications.
+					</p>
 				</div>
+
 				<Button
-					href={resolve('/docs')}
-					class="gap-1.5 self-start sm:self-auto"
+					onclick={runFlowSimulation}
+					class="rounded-xl bg-emerald-500/15 border border-emerald-500/40 font-mono text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25"
 					size="sm"
 				>
-					View All Guides
-					<ArrowRight class="size-4" />
+					{#if isSimulating}
+						<span class="size-2 rounded-full bg-emerald-400 animate-ping mr-2"></span>
+						Simulating Flow...
+					{:else}
+						<Cpu class="size-3.5 mr-1.5" />
+						Simulate OIDC Flow
+					{/if}
 				</Button>
 			</div>
 
-			<div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+			<!-- Pipeline Cards -->
+			<div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 font-mono">
+				<!-- Step 1 -->
+				<div class="relative rounded-2xl border p-5 transition-all {simulationStep === 1 ? 'border-emerald-500 bg-emerald-950/20 shadow-lg shadow-emerald-500/10' : 'border-white/10 bg-gray-950/60'}">
+					<div class="flex items-center justify-between">
+						<span class="flex size-7 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">01</span>
+						<span class="text-2xs text-gray-500">Client / Browser</span>
+					</div>
+					<h3 class="mt-4 text-sm font-bold text-white">PKCE Challenge</h3>
+					<p class="mt-2 text-2xs text-gray-400 leading-normal">
+						App generates cryptographically random <code class="text-emerald-400">code_verifier</code> and computes SHA-256 <code class="text-emerald-400">code_challenge</code>.
+					</p>
+					<div class="mt-4 text-3xs rounded bg-black/60 p-2 text-gray-400">
+						S256(verifier) &rarr; challenge
+					</div>
+				</div>
+
+				<!-- Step 2 -->
+				<div class="relative rounded-2xl border p-5 transition-all {simulationStep === 2 ? 'border-emerald-500 bg-emerald-950/20 shadow-lg shadow-emerald-500/10' : 'border-white/10 bg-gray-950/60'}">
+					<div class="flex items-center justify-between">
+						<span class="flex size-7 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">02</span>
+						<span class="text-2xs text-gray-500">AuthForest IdP</span>
+					</div>
+					<h3 class="mt-4 text-sm font-bold text-white">Consent & Login</h3>
+					<p class="mt-2 text-2xs text-gray-400 leading-normal">
+						User authenticates via AuthForest <code class="text-emerald-400">/auth</code>. Session validated and single-use authorization code generated.
+					</p>
+					<div class="mt-4 text-3xs rounded bg-black/60 p-2 text-emerald-400 font-bold">
+						302 Redirect &rarr; /callback?code=...
+					</div>
+				</div>
+
+				<!-- Step 3 -->
+				<div class="relative rounded-2xl border p-5 transition-all {simulationStep === 3 ? 'border-emerald-500 bg-emerald-950/20 shadow-lg shadow-emerald-500/10' : 'border-white/10 bg-gray-950/60'}">
+					<div class="flex items-center justify-between">
+						<span class="flex size-7 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">03</span>
+						<span class="text-2xs text-gray-500">Backchannel Token</span>
+					</div>
+					<h3 class="mt-4 text-sm font-bold text-white">Code Exchange</h3>
+					<p class="mt-2 text-2xs text-gray-400 leading-normal">
+						Client exchanges code + original <code class="text-emerald-400">code_verifier</code> via POST <code class="text-emerald-400">/oauth/token</code>.
+					</p>
+					<div class="mt-4 text-3xs rounded bg-black/60 p-2 text-cyan-400">
+						200 OK &rarr; Access, ID & Refresh Tokens
+					</div>
+				</div>
+
+				<!-- Step 4 -->
+				<div class="relative rounded-2xl border p-5 transition-all {simulationStep === 4 ? 'border-emerald-500 bg-emerald-950/20 shadow-lg shadow-emerald-500/10' : 'border-white/10 bg-gray-950/60'}">
+					<div class="flex items-center justify-between">
+						<span class="flex size-7 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white">04</span>
+						<span class="text-2xs text-gray-500">Resource API</span>
+					</div>
+					<h3 class="mt-4 text-sm font-bold text-white">Offline Verification</h3>
+					<p class="mt-2 text-2xs text-gray-400 leading-normal">
+						APIs verify JWT RS256 signature against cached JWKS public keys with zero network overhead.
+					</p>
+					<div class="mt-4 text-3xs rounded bg-black/60 p-2 text-emerald-300 font-bold">
+						Claims Validated in &lt;100&mu;s
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Developer Integration Matrix -->
+	<section id="code-matrix" class="gsap-reveal border-t border-white/10 py-20 lg:py-28">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+			<div class="text-center">
+				<span class="font-mono text-xs uppercase tracking-widest text-emerald-400">[ZERO-CONFIG COMPATIBILITY]</span>
+				<h2 class="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-sans">
+					Integrate Any Language in 60 Seconds
+				</h2>
+				<p class="mx-auto mt-3 max-w-2xl text-sm text-gray-400">
+					Because AuthForest strictly adheres to OpenID Connect Core 1.0, you don&apos;t need proprietary SDKs. Use standard libraries.
+				</p>
+			</div>
+
+			<div class="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-gray-950 shadow-2xl">
+				<!-- Workbench Nav Tabs -->
+				<div class="flex flex-wrap items-center justify-between border-b border-white/10 bg-gray-900/40 px-4 py-3 sm:px-6">
+					<div class="flex flex-wrap gap-2 font-mono text-xs">
+						{#each ([
+							{ id: 'nextjs', label: 'Next.js (Auth.js)' },
+							{ id: 'react', label: 'React / SPA (PKCE)' },
+							{ id: 'go', label: 'Go (go-oidc)' },
+							{ id: 'python', label: 'Python (Authlib)' },
+							{ id: 'curl', label: 'cURL / HTTP' }
+						] as const) as item (item.id)}
+							<button
+								type="button"
+								onclick={() => (activeSdk = item.id)}
+								class="cursor-pointer rounded-lg px-3 py-1.5 transition-all {activeSdk === item.id ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold' : 'text-gray-400 hover:text-white'}"
+							>
+								{item.label}
+							</button>
+						{/each}
+					</div>
+
+					<button
+						type="button"
+						onclick={() => copyToClipboard(sdkSnippets[activeSdk], `sdk-copy-${activeSdk}`)}
+						class="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-mono text-gray-300 hover:bg-white/10"
+					>
+						{#if copiedSnippet === `sdk-copy-${activeSdk}`}
+							<Check class="size-3.5 text-emerald-400" />
+							<span>Copied!</span>
+						{:else}
+							<Copy class="size-3.5" />
+							<span>Copy Code</span>
+						{/if}
+					</button>
+				</div>
+
+				<!-- Code Block -->
+				<div class="p-4 sm:p-6 bg-black/60 font-mono text-xs sm:text-sm">
+					<pre class="overflow-x-auto leading-relaxed text-gray-300"><code>{sdkSnippets[activeSdk]}</code></pre>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Live Technical Terminal: Discovery & Health -->
+	<section class="gsap-reveal border-t border-white/10 bg-[#07090c] py-20 lg:py-28">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+			<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+				<div class="lg:col-span-5 space-y-4">
+					<span class="font-mono text-xs uppercase tracking-widest text-emerald-400">[AUTOMATIC DISCOVERY]</span>
+					<h2 class="text-3xl font-extrabold tracking-tight text-white font-sans">
+						Standards-Compliant OIDC Discovery
+					</h2>
+					<p class="text-sm text-gray-400 leading-relaxed font-sans">
+						No manual endpoint configuration required. Client SDKs query AuthForest&apos;s well-known discovery document to automatically configure token endpoints, userinfo routes, and public JWKS verification keys.
+					</p>
+
+					<div class="space-y-2 pt-2 font-mono text-xs">
+						<div class="flex items-center gap-2 text-gray-300">
+							<Check class="size-4 text-emerald-400" />
+							<span>RFC 8414 OAuth 2.0 Authorization Server Metadata</span>
+						</div>
+						<div class="flex items-center gap-2 text-gray-300">
+							<Check class="size-4 text-emerald-400" />
+							<span>OpenID Connect Discovery 1.0</span>
+						</div>
+						<div class="flex items-center gap-2 text-gray-300">
+							<Check class="size-4 text-emerald-400" />
+							<span>High-availability health check endpoint</span>
+						</div>
+					</div>
+
+					<div class="pt-4">
+						<Button
+							href={resolve('/docs/api-reference')}
+							class="rounded-xl border border-white/20 bg-white/5 font-mono text-xs text-white hover:bg-white/10"
+							size="sm"
+						>
+							<Database class="mr-2 size-3.5 text-emerald-400" />
+							View OpenAPI Spec
+						</Button>
+					</div>
+				</div>
+
+				<!-- Terminal Card -->
+				<div class="lg:col-span-7 rounded-2xl border border-white/10 bg-gray-950 shadow-2xl overflow-hidden font-mono">
+					<div class="flex items-center justify-between border-b border-white/10 bg-gray-900/50 px-4 py-3">
+						<div class="flex gap-2 text-xs">
+							<button
+								type="button"
+								onclick={() => (activeTerminal = 'discovery')}
+								class="cursor-pointer px-2 py-0.5 rounded {activeTerminal === 'discovery' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-gray-400'}"
+							>
+								/.well-known/openid-configuration
+							</button>
+							<button
+								type="button"
+								onclick={() => (activeTerminal = 'jwks')}
+								class="cursor-pointer px-2 py-0.5 rounded {activeTerminal === 'jwks' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-gray-400'}"
+							>
+								/.well-known/jwks.json
+							</button>
+							<button
+								type="button"
+								onclick={() => (activeTerminal = 'health')}
+								class="cursor-pointer px-2 py-0.5 rounded {activeTerminal === 'health' ? 'bg-emerald-500/20 text-emerald-300 font-bold' : 'text-gray-400'}"
+							>
+								/health
+							</button>
+						</div>
+
+						<span class="text-3xs text-gray-500">HTTP/2 200 OK</span>
+					</div>
+
+					<div class="p-4 bg-black/80 text-xs text-gray-300 max-h-80 overflow-y-auto">
+						{#if activeTerminal === 'discovery'}
+							<pre><code>{discoveryJson}</code></pre>
+						{:else if activeTerminal === 'jwks'}
+							<pre><code>{jwksJson}</code></pre>
+						{:else}
+							<pre><code>{healthJson}</code></pre>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Documentation Hub -->
+	<section class="gsap-reveal border-t border-white/10 py-20 lg:py-28">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+			<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+				<div>
+					<span class="font-mono text-xs uppercase tracking-widest text-emerald-400">[ENGINEERING DOCUMENTATION]</span>
+					<h2 class="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl font-sans">
+						Comprehensive Integration Manuals
+					</h2>
+					<p class="mt-2 text-sm text-gray-400 max-w-xl font-sans">
+						Step-by-step production guides, API specifications, and Docker deployment blueprints.
+					</p>
+				</div>
+
+				<Button
+					href={resolve('/docs')}
+					class="rounded-xl bg-emerald-500/15 border border-emerald-500/30 font-mono text-xs text-emerald-300 hover:bg-emerald-500/25"
+					size="sm"
+				>
+					Browse All Docs
+					<ArrowRight class="ml-1.5 size-3.5" />
+				</Button>
+			</div>
+
+			<div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each guides as guide (guide.title)}
 					<a
 						href={resolve(guide.href as any)}
-						class="group flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-xs transition-all hover:border-primary-500/50 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-500/50"
+						class="group flex flex-col justify-between rounded-2xl border border-white/10 bg-gray-950/60 p-6 transition-all hover:border-emerald-500/40 hover:bg-gray-950/90 hover:shadow-xl hover:shadow-emerald-500/5"
 					>
 						<div>
-							<div class="flex items-center justify-between">
-								<div class="flex size-10 items-center justify-center rounded-lg bg-gray-100 text-gray-700 transition-colors group-hover:bg-primary-100 group-hover:text-primary-600 dark:bg-gray-800 dark:text-gray-300 dark:group-hover:bg-primary-950 dark:group-hover:text-primary-400">
-									<guide.icon class="size-5" />
+							<div class="flex items-center justify-between font-mono">
+								<div class="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-105 transition-transform">
+									<guide.icon class="size-4.5" />
 								</div>
-								<span class="rounded bg-gray-100 px-2 py-0.5 text-2xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+								<span class="text-3xs text-gray-500 border border-white/10 rounded-full px-2 py-0.5">
 									{guide.tag}
 								</span>
 							</div>
-							<h4 class="mt-4 text-base font-bold text-gray-900 transition-colors group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
+
+							<h3 class="mt-4 text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
 								{guide.title}
-							</h4>
-							<p class="mt-1.5 text-xs text-gray-600 dark:text-gray-400">{guide.desc}</p>
+							</h3>
+							<p class="mt-1.5 text-xs text-gray-400 leading-normal">
+								{guide.desc}
+							</p>
 						</div>
-						<div class="mt-4 flex items-center gap-1 text-xs font-semibold text-primary-600 transition-transform group-hover:translate-x-1 dark:text-primary-400">
-							<span>Read guide</span>
-							<ArrowRight class="size-3.5" />
+
+						<div class="mt-5 flex items-center gap-1 font-mono text-xs text-emerald-400 font-semibold group-hover:translate-x-1 transition-transform">
+							<span>Read manual</span>
+							<ArrowRight class="size-3" />
 						</div>
 					</a>
 				{/each}
@@ -795,88 +958,55 @@ curl -X POST https://authforest.byfaraaz.com/oauth/token \\
 		</div>
 	</section>
 
-	<!-- Self-Host Callout Banner -->
-	<section class="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-		<div class="relative overflow-hidden rounded-3xl border border-primary-500/30 bg-gradient-to-r from-primary-900 via-indigo-950 to-gray-950 p-8 sm:p-12 text-white shadow-2xl">
-			<div class="max-w-2xl">
-				<h3 class="text-2xl font-extrabold sm:text-3xl">Self-Host AuthForest in Under 2 Minutes</h3>
-				<p class="mt-3 text-sm text-gray-300 sm:text-base">
-					AuthForest is distributed as a lightweight container image with zero external runtime dependencies beyond PostgreSQL.
-				</p>
-
-				<div class="mt-6 flex flex-wrap gap-3">
-					<Button
-						href={resolve('/docs/docker-setup')}
-						class="gap-1.5 bg-white text-gray-900 hover:bg-gray-100 font-semibold"
-						size="sm"
-					>
-						<Server class="size-4" />
-						Docker Setup Instructions
-					</Button>
-					<Button
-						href="https://github.com/fvrvz/authforest"
-						target="_blank"
-						outline
-						class="gap-1.5 text-white border-white/30 hover:bg-white/10"
-						size="sm"
-					>
-						<Github class="size-4" />
-						Star on GitHub
-					</Button>
-				</div>
-			</div>
-		</div>
-	</section>
-
 	<!-- Footer -->
-	<footer class="border-t border-gray-200 bg-gray-50 py-12 text-xs text-gray-500 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-400">
-		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+	<footer class="border-t border-white/10 bg-[#060709] py-16 text-xs text-gray-500 font-mono">
+		<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 			<div class="grid grid-cols-2 gap-8 md:grid-cols-4">
-				<div class="col-span-2 md:col-span-1">
+				<div class="col-span-2 md:col-span-1 space-y-3 font-sans">
 					<div class="flex items-center gap-2">
-						<TreePine class="size-5 text-primary-600 dark:text-primary-400" />
-						<span class="text-base font-bold text-gray-900 dark:text-white">AuthForest</span>
+						<TreePine class="size-5 text-emerald-400" />
+						<span class="text-base font-bold text-white font-mono">AuthForest</span>
 					</div>
-					<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-						Lightweight, self-hosted OAuth 2.0 & OpenID Connect 1.0 Identity Provider.
+					<p class="text-xs text-gray-400 leading-normal">
+						Self-hosted, high-performance OAuth 2.0 & OpenID Connect Identity Provider written in Go.
 					</p>
-					<div class="mt-4 flex items-center gap-1.5 text-gray-400">
-						<span>Powered by</span>
-						<img src={asset('/fayso-logo.svg')} alt="FaySo" class="h-4 dark:invert" />
+					<div class="flex items-center gap-1.5 text-gray-400 text-xs">
+						<span>Engineered by</span>
+						<img src={asset('/fayso-logo.svg')} alt="FaySo" class="h-4 invert" />
 					</div>
 				</div>
 
 				<div>
-					<h5 class="font-bold text-gray-900 dark:text-white">Product</h5>
+					<h4 class="font-mono text-2xs uppercase tracking-wider text-white">Protocol Core</h4>
 					<ul class="mt-3 space-y-2">
-						<li><a href="#features" class="hover:text-primary-600 dark:hover:text-primary-400">Features</a></li>
-						<li><a href="#architecture" class="hover:text-primary-600 dark:hover:text-primary-400">Architecture</a></li>
-						<li><a href="#discovery" class="hover:text-primary-600 dark:hover:text-primary-400">OIDC Discovery</a></li>
-						<li><a href={resolve('/login')} class="hover:text-primary-600 dark:hover:text-primary-400">Admin Console</a></li>
+						<li><a href="#token-studio" class="hover:text-emerald-400">Claims Studio</a></li>
+						<li><a href="#flow-architecture" class="hover:text-emerald-400">PKCE Architecture</a></li>
+						<li><a href="#code-matrix" class="hover:text-emerald-400">SDK Matrix</a></li>
+						<li><a href={resolve('/login')} class="hover:text-emerald-400">Admin Console</a></li>
 					</ul>
 				</div>
 
 				<div>
-					<h5 class="font-bold text-gray-900 dark:text-white">Documentation</h5>
+					<h4 class="font-mono text-2xs uppercase tracking-wider text-white">Documentation</h4>
 					<ul class="mt-3 space-y-2">
-						<li><a href={resolve('/docs/getting-started')} class="hover:text-primary-600 dark:hover:text-primary-400">Quick Start</a></li>
-						<li><a href={resolve('/docs/docker-setup')} class="hover:text-primary-600 dark:hover:text-primary-400">Docker Setup</a></li>
-						<li><a href={resolve('/docs/register-app')} class="hover:text-primary-600 dark:hover:text-primary-400">Register an App</a></li>
-						<li><a href={resolve('/docs/api-reference')} class="hover:text-primary-600 dark:hover:text-primary-400">API Reference</a></li>
+						<li><a href={resolve('/docs/getting-started')} class="hover:text-emerald-400">Quick Start</a></li>
+						<li><a href={resolve('/docs/docker-setup')} class="hover:text-emerald-400">Docker Setup</a></li>
+						<li><a href={resolve('/docs/register-app')} class="hover:text-emerald-400">Register an App</a></li>
+						<li><a href={resolve('/docs/api-reference')} class="hover:text-emerald-400">REST API Specs</a></li>
 					</ul>
 				</div>
 
 				<div>
-					<h5 class="font-bold text-gray-900 dark:text-white">Community & Source</h5>
+					<h4 class="font-mono text-2xs uppercase tracking-wider text-white">Source & Community</h4>
 					<ul class="mt-3 space-y-2">
 						<li>
 							<a
 								href="https://github.com/fvrvz/authforest"
 								target="_blank"
 								rel="noreferrer"
-								class="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
+								class="inline-flex items-center gap-1 hover:text-emerald-400"
 							>
-								GitHub Repository
+								GitHub Repo
 								<ExternalLink class="size-3" />
 							</a>
 						</li>
@@ -885,9 +1015,9 @@ curl -X POST https://authforest.byfaraaz.com/oauth/token \\
 								href="https://github.com/fvrvz/authforest/issues"
 								target="_blank"
 								rel="noreferrer"
-								class="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
+								class="inline-flex items-center gap-1 hover:text-emerald-400"
 							>
-								Issue Tracker
+								Issues & Roadmap
 								<ExternalLink class="size-3" />
 							</a>
 						</li>
@@ -896,7 +1026,7 @@ curl -X POST https://authforest.byfaraaz.com/oauth/token \\
 								href="https://github.com/fvrvz/authforest/blob/main/LICENSE"
 								target="_blank"
 								rel="noreferrer"
-								class="inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
+								class="inline-flex items-center gap-1 hover:text-emerald-400"
 							>
 								MIT License
 								<ExternalLink class="size-3" />
@@ -906,7 +1036,7 @@ curl -X POST https://authforest.byfaraaz.com/oauth/token \\
 				</div>
 			</div>
 
-			<div class="mt-10 border-t border-gray-200 pt-6 text-center text-2xs text-gray-400 dark:border-gray-800 dark:text-gray-500">
+			<div class="mt-12 border-t border-white/5 pt-6 text-center text-3xs text-gray-600">
 				&copy; {new Date().getFullYear()} AuthForest. Open-source under MIT License.
 			</div>
 		</div>
