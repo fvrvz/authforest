@@ -10,6 +10,7 @@ on:
     branches: [develop, main]
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
 
 defaults:
   run:
