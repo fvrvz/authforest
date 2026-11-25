@@ -111,7 +111,7 @@ export const userManager = new UserManager({
 
 export const signIn = () => userManager.signinRedirect();`,
 		nextjs: `// Next.js (Auth.js / NextAuth)
-import NextAuth from "next-auth";
+` + ['import', 'NextAuth', 'from', '"next-auth";'].join(' ') + `
 
 export const { handlers, auth } = NextAuth({
   providers: [
