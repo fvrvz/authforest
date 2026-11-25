@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_BASE_URL: ${{ secrets.BACKEND_URL }}
-      PUBLIC_BASE_PATH: ${{ vars.PUBLIC_BASE_PATH }}
+      PUBLIC_BASE_PATH: ${{ vars.CUSTOM_DOMAIN != '' && '' || vars.PUBLIC_BASE_PATH }}
 
     steps:
       - name: Checkout code
@@ -50,6 +50,10 @@ jobs:
 
       - name: Build the Svelte Site
         run: pnpm run build
+
+      - name: Add CNAME for Custom Domain
+        if: vars.CUSTOM_DOMAIN != ''
+        run: echo "${{ vars.CUSTOM_DOMAIN }}" > frontend/build/CNAME
 
       - name: Upload artifact to GitHub Pages
         uses: actions/upload-pages-artifact@v3

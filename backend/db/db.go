@@ -3,6 +3,8 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/fvrvz/authforest/config"
@@ -72,11 +74,43 @@ func Init() {
 	}
 
 	// Seed admin panel OAuth client (public client for the SPA)
-	redirectURIs := []string{
-		"http://localhost:5173/callback",
-		"https://fvrvz.github.io/authforest/callback",
-		"https://authforest.byfaraaz.com/callback",
+	redirectURIMap := make(map[string]bool)
+	var redirectURIs []string
+
+	addURI := func(uri string) {
+		uri = strings.TrimSpace(uri)
+		if uri != "" && !redirectURIMap[uri] {
+			redirectURIMap[uri] = true
+			redirectURIs = append(redirectURIs, uri)
+		}
 	}
+
+	// Always support local development default
+	addURI("http://localhost:5173/callback")
+
+	// Load from runtime config if specified
+	if cfg != nil {
+		for _, u := range cfg.AdminPanel.RedirectURIs {
+			for _, part := range strings.Split(u, ",") {
+				addURI(part)
+			}
+		}
+	}
+
+	// Load from environment variable ADMIN_PANEL_REDIRECT_URIS (comma-separated)
+	if envURIs := os.Getenv("ADMIN_PANEL_REDIRECT_URIS"); envURIs != "" {
+		for _, part := range strings.Split(envURIs, ",") {
+			addURI(part)
+		}
+	}
+
+	// Load from ADMIN_PANEL_URL or FRONTEND_URL if provided
+	for _, envKey := range []string{"ADMIN_PANEL_URL", "FRONTEND_URL"} {
+		if u := os.Getenv(envKey); u != "" {
+			addURI(strings.TrimRight(u, "/") + "/callback")
+		}
+	}
+
 	adminClient := models.OAuthClient{
 		ClientID:     constants.ADMIN_PANEL_CLIENT_ID,
 		ClientName:   constants.ADMIN_PANEL_CLIENT_NAME,

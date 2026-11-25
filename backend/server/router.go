@@ -1,6 +1,9 @@
 package server
 
 import (
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/fvrvz/authforest/config"
@@ -42,8 +45,39 @@ func setupCors(router *gin.Engine) {
 	corsConfig := config.GetConfig().Server.CORS
 	corsDefaults := cors.DefaultConfig()
 
-	if len(corsConfig.AllowOrigins) > 0 {
-		corsDefaults.AllowOrigins = corsConfig.AllowOrigins
+	originMap := make(map[string]bool)
+	var origins []string
+
+	addOrigin := func(origin string) {
+		origin = strings.TrimSpace(origin)
+		if origin != "" && !originMap[origin] {
+			originMap[origin] = true
+			origins = append(origins, origin)
+		}
+	}
+
+	for _, o := range corsConfig.AllowOrigins {
+		for _, part := range strings.Split(o, ",") {
+			addOrigin(part)
+		}
+	}
+
+	if envOrigins := os.Getenv("CORS_ALLOWED_ORIGINS"); envOrigins != "" {
+		for _, part := range strings.Split(envOrigins, ",") {
+			addOrigin(part)
+		}
+	}
+
+	for _, envKey := range []string{"ADMIN_PANEL_URL", "FRONTEND_URL"} {
+		if rawURL := os.Getenv(envKey); rawURL != "" {
+			if parsed, err := url.Parse(rawURL); err == nil && parsed.Scheme != "" && parsed.Host != "" {
+				addOrigin(parsed.Scheme + "://" + parsed.Host)
+			}
+		}
+	}
+
+	if len(origins) > 0 {
+		corsDefaults.AllowOrigins = origins
 	}
 	if len(corsConfig.AllowMethods) > 0 {
 		corsDefaults.AllowMethods = corsConfig.AllowMethods

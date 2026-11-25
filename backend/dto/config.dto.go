@@ -34,12 +34,17 @@ type SMTP struct {
 	From     string `yaml:"from"`
 }
 
+type AdminPanel struct {
+	RedirectURIs []string `yaml:"redirect_uris"`
+}
+
 type Config struct {
-	Server   Server   `yaml:"server"`
-	Database Database `yaml:"database"`
-	JWT      JWT      `yaml:"jwt"`
-	OIDC     OIDC     `yaml:"oidc"`
-	SMTP     SMTP     `yaml:"smtp"`
+	Server     Server     `yaml:"server"`
+	Database   Database   `yaml:"database"`
+	JWT        JWT        `yaml:"jwt"`
+	OIDC       OIDC       `yaml:"oidc"`
+	SMTP       SMTP       `yaml:"smtp"`
+	AdminPanel AdminPanel `yaml:"admin_panel"`
 }
 
 type CorsConfig struct {
