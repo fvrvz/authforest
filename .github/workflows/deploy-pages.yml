@@ -24,7 +24,7 @@ defaults:
 jobs:
   build:
     name: Build the Site
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       VITE_BASE_URL: ${{ secrets.BACKEND_URL }}
       PUBLIC_BASE_PATH: ${{ vars.CUSTOM_DOMAIN != '' && '' || vars.PUBLIC_BASE_PATH }}
@@ -63,7 +63,7 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
