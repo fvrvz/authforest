@@ -10,6 +10,7 @@ import (
 	"github.com/fvrvz/authforest/helpers"
 	"github.com/fvrvz/authforest/models"
 	"github.com/fvrvz/gologger"
+	"github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -71,11 +72,16 @@ func Init() {
 	}
 
 	// Seed admin panel OAuth client (public client for the SPA)
+	redirectURIs := []string{
+		"http://localhost:5173/callback",
+		"https://fvrvz.github.io/authforest/callback",
+		"https://authforest.byfaraaz.com/callback",
+	}
 	adminClient := models.OAuthClient{
 		ClientID:     constants.ADMIN_PANEL_CLIENT_ID,
 		ClientName:   constants.ADMIN_PANEL_CLIENT_NAME,
 		ClientType:   "public",
-		RedirectURIs: []string{"http://localhost:5173/callback", "https://fvrvz.github.io/authforest/callback"},
+		RedirectURIs: redirectURIs,
 		Scopes:       "openid profile email",
 		GrantTypes:   "authorization_code",
 	}
@@ -83,6 +89,7 @@ func Init() {
 	if err := db.FirstOrCreate(&adminClient, models.OAuthClient{ClientID: constants.ADMIN_PANEL_CLIENT_ID}).Error; err != nil {
 		gologger.ERROR("Failed to create admin panel OAuth client: %+v", err)
 	} else {
+		db.Model(&adminClient).Update("redirect_uris", pq.StringArray(redirectURIs))
 		gologger.INFO("Admin panel OAuth client registered with client_id: '%s'", constants.ADMIN_PANEL_CLIENT_ID)
 	}
 

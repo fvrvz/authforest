@@ -4,6 +4,7 @@ server:
     allowOrigins:
       - http://localhost:5173
       - https://fvrvz.github.io
+      - https://authforest.byfaraaz.com
     allowCredentials: true
     maxAge: 24
     allowMethods:
